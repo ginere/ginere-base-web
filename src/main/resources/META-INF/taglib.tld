@@ -1,0 +1,91 @@
+<taglib xmlns="http://java.sun.com/xml/ns/j2ee" 
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+  xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee/web-
+jsptaglibrary_2_0.xsd" 
+  version="2.0">
+
+	<tlibversion>$VERSION$</tlibversion>
+	<jspversion>2.1</jspversion>
+	<shortname>i18n</shortname>
+	<uri>http://ginere.eu/avem/avem-i18n.tld</uri>
+	<info>
+
+	</info>
+
+	<tag>
+		<name>i18nHtml</name>
+		<tagclass>eu.ginere.web.tld.i18n.I18nJSTag</tagclass>
+		<bodycontent>empty</bodycontent>
+		<info>
+			Writes a i18n label into html Format
+			id: The label id
+    </info>
+		<attribute>
+			<name>id</name>
+			<required>true</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+	</tag>
+
+	<tag>
+		<name>i18nJS</name>
+		<tagclass>eu.ginere.web.tld.i18n.I18nJSTag</tagclass>
+		<bodycontent>empty</bodycontent>
+		<info>
+			Writes a i18n label into js Format
+			id: The label id
+    </info>
+		<attribute>
+			<name>id</name>
+			<required>true</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+	</tag>
+	
+	
+	<tag>
+		<name>hasRight</name>
+		<tagclass>eu.ginere.web.tld.rights.HasRightTasg</tagclass>
+		<bodycontent>JSP</bodycontent>
+		<info>
+			Writes a i18n label into js Format
+			id: The label id
+    </info>
+		<attribute>
+			<name>id</name>
+			<required>true</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+	</tag>
+
+	<tag>
+	  <name>fields</name>
+	  <tagclass>eu.ginere.web.tld.vo.VoFieldsTag</tagclass>
+	  <bodycontent>empty</bodycontent>
+	  <info>
+			Teturn the fields of a Vo Object
+			Vo className: The label id
+      </info>
+	  <attribute>
+		<name>className</name>
+		<required>true</required>
+		<rtexprvalue>false</rtexprvalue>
+	  </attribute>
+	</tag>
+
+	<tag>
+	  <name>columns</name>
+	  <tagclass>eu.ginere.web.tld.vo.VoColumnsTag</tagclass>
+	  <bodycontent>empty</bodycontent>
+	  <info>
+		Teturn the columnns of a Vo Object
+		Vo className: The label id
+      </info>
+	  <attribute>
+		<name>className</name>
+		<required>true</required>
+		<rtexprvalue>false</rtexprvalue>
+	  </attribute>
+	</tag>
+
+</taglib>
