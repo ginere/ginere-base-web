@@ -138,6 +138,6 @@
 		<fileupload.version>1.2.2</fileupload.version>
 
 		<!-- GINERE -->
-		<ginere-base.version>1.0.1-SNAPSHOT</ginere-base.version>
+		<ginere-base.version>1.0.1</ginere-base.version>
 	</properties>
 </project>
