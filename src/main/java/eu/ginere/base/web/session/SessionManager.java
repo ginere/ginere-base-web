@@ -50,6 +50,8 @@ public class SessionManager {
 	// private static final Vector SESSION_LIST=new Vector();
 	private final Map<String,AbstractSession> SESSION_HASH=new Hashtable<String,AbstractSession>();
 	
+	private boolean enabled=false;
+	
 	private SessionManager(){
 		sessionNumber=0;
 		CONTEXT=new Context(this);
@@ -58,7 +60,15 @@ public class SessionManager {
 		addDestroySessionListener(RemoteHostSession.MANAGER);
 	}
 
+	public void enable(){
+		enabled = true;
+	}
 
+	public void disable(){
+		enabled=false;
+	}
+
+	
 	/**
 	 * The one object of this class is stored into the session. This class implements the HttpSessionBindingListener
 	 * The when this object is bounded or unbounded into the session the listeners will be called.
@@ -87,6 +97,12 @@ public class SessionManager {
 	 */
     public void initSession(HttpServletRequest request, HttpServletResponse response){
 
+    	if (!enabled){
+    		if (log.isDebugEnabled()){
+    			log.debug("SessionManager is disabled");
+    		}
+    		return ;
+    	}
     	// Todas las sessiones se gestionaran ...
 //		if (!GlobalFileProperties.getBooleanValue(SessionManager.class,"ManageSessions",true)){
 //			if (log.isInfoEnabled()){
