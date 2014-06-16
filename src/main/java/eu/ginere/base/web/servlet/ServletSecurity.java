@@ -22,12 +22,20 @@ public class ServletSecurity {
 //	private static String validRefered[];
 	private static String CAPCHA_URL;
 
+	
+	private static boolean initialized=false;
+	
 	public static void init(){
 //		privilegedRemoteClients=GlobalFileProperties.getPropertyMap(ServletSecurity.class, "PrivilegedRemoteClients");
 //		validRefered=GlobalFileProperties.getPropertyList(ServletSecurity.class, "ValidRefered");
 		CAPCHA_URL=GlobalFileProperties.getStringValue(ServletSecurity.class, "Captcha","http://en.wikipedia.org/wiki/CAPTCHA");
+		initialized=true;
 	}
 
+	public static boolean isInitialized(){
+		return initialized;
+	}
+	
 	static public void isFirstSessionCall(HttpServletRequest request,MainServlet servlet) throws ServletSecurityException{
 		// testing if there is a valid session
 		HttpSession session = request.getSession();

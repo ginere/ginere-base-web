@@ -150,9 +150,10 @@ public abstract class MainServlet extends HttpServlet {
 	
 	
 	// Inits the servlet security stuff
-	static {
-		ServletSecurity.init();
-	}
+    // TODO That have to be done in the Initialization stuff
+    //	static {
+    //		ServletSecurity.init();
+    //	}
 	
 	public void init(ServletConfig config) throws ServletException {
 		super.init(config);
@@ -347,54 +348,59 @@ public abstract class MainServlet extends HttpServlet {
 			
 			// SECURITY
 			// IF it is the first cookie redirect to captha
-			long securityTestCheckTime=System.currentTimeMillis();
-			try {
-				
-				// si el usuario no esta conectado es entonces cuando verificamos que existe session
-				// y que hay un referer.
-				// Por que quizas la session haya expirado pero aun tenemos un cookie activa
-				// que nos valida la peticion y no podemos cortar al usuario si la cookie esta activa 
-				// y lo primero que hace es un comet.
-	//				if (!isUserConnected(request)){
-	//					
-	////					TODO en el contans la primera vez que un usuario se conecta no tiene Session
-	////					Los constants tienen que ser publicos , que estos generen una JSESSIONID y asi todo iria bien
-	////					
-	////					// todos las llamadas a servlet tienen que tener una session
-	////					ServletSecurity.isFirstSessionCall(request, this);
-	//					
-	////					TODO las versiones enbarcadas no tienen referer?
-	////					// No se pueden llamar a los servlets desde sitios externos
-	////					ServletSecurity.testReferer(request, this);
-	//				}
-				// Si hay demasidos errores en una misma session o desde un remote host,
-				// directamente paramos las llamadas
-				ServletSecurity.testToManyErrors(request, this);
-				
-				// Para servlet speciales
-				if (enableSpetialSecurity()){
-					// Aqui no aceptamos robots
-					ServletSecurity.noRobots(request, this);
+            if (ServletSecurity.isInitialized()){
+				long securityTestCheckTime=System.currentTimeMillis();
+				try {
 					
-					// no se pueden hacer demasiadas llamadas 
-					// TODO por el moment osolo lo ralentizamos
-					ServletSecurity.testToManySpetialCalls(request, this);
-					// aqui habria que banera los clientes y las sessiones ...
+					// si el usuario no esta conectado es entonces cuando verificamos que existe session
+					// y que hay un referer.
+					// Por que quizas la session haya expirado pero aun tenemos un cookie activa
+					// que nos valida la peticion y no podemos cortar al usuario si la cookie esta activa 
+					// y lo primero que hace es un comet.
+		//				if (!isUserConnected(request)){
+		//					
+		////					TODO en el contans la primera vez que un usuario se conecta no tiene Session
+		////					Los constants tienen que ser publicos , que estos generen una JSESSIONID y asi todo iria bien
+		////					
+		////					// todos las llamadas a servlet tienen que tener una session
+		////					ServletSecurity.isFirstSessionCall(request, this);
+		//					
+		////					TODO las versiones enbarcadas no tienen referer?
+		////					// No se pueden llamar a los servlets desde sitios externos
+		////					ServletSecurity.testReferer(request, this);
+		//				}
+					// Si hay demasidos errores en una misma session o desde un remote host,
+					// directamente paramos las llamadas
+					ServletSecurity.testToManyErrors(request, this);
 					
-					servletInfo.startSpetialCall(request,uri);
+					// Para servlet speciales
+					if (enableSpetialSecurity()){
+						// Aqui no aceptamos robots
+						ServletSecurity.noRobots(request, this);
+						
+						// no se pueden hacer demasiadas llamadas 
+						// TODO por el moment osolo lo ralentizamos
+						ServletSecurity.testToManySpetialCalls(request, this);
+						// aqui habria que banera los clientes y las sessiones ...
+						
+						servletInfo.startSpetialCall(request,uri);
+					}
+				}catch(ServletSecurityException e){
+					servletInfo.addSecurityError(request,e);
+		//				ServletSecurity.redirectToCapcha(request, response, this);
+					response.sendError(HTTP_CODE_FORBIDDEN);
+					Notify.warn(log,"Security exception for servlet:'"+uri+"'",e);
+					return;
+				}finally{
+					if (log.isDebugEnabled()){
+						log.debug("Security Checks done in:"+(System.currentTimeMillis()-securityTestCheckTime));
+					}
 				}
-			}catch(ServletSecurityException e){
-				servletInfo.addSecurityError(request,e);
-	//				ServletSecurity.redirectToCapcha(request, response, this);
-				response.sendError(HTTP_CODE_FORBIDDEN);
-				Notify.warn(log,"Security exception for servlet:'"+uri+"'",e);
-				return;
-			}finally{
-				if (log.isDebugEnabled()){
-					log.debug("Security Checks done in:"+(System.currentTimeMillis()-securityTestCheckTime));
+            } else {
+            	if (log.isDebugEnabled()){
+					log.debug("Servlet Security not initialized...");
 				}
-			}
-
+            }
 				
 			// Then request stuff
 			String langId=getStringParameter(request,"LANG_ID",null);
