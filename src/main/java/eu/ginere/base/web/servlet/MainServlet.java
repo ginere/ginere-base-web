@@ -75,10 +75,12 @@ public abstract class MainServlet extends HttpServlet {
 	 * make this information available to the client, the status code 404 (Not
 	 * Found) can be used instead.
 	 */
-	public static final int HTTP_CODE_FORBIDDEN = 403;
 	public static final int HTTP_CODE_REQUEST_TIMEOUT = 408;
 	public static final int HTTP_SERVICE_UNAVAILABLE=503;
+	
 	public static final int HTTP_BAD_REQUEST=400;
+	public static final int HTTP_CODE_FORBIDDEN = 403;
+	public static final int HTTP_NOT_FOUND=404;
 	
 	/**
 	 * Funcion que debe implementarse en los servlets para hacer el trabajo
