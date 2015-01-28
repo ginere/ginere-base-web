@@ -33,7 +33,6 @@ public class GetLanguageList extends JSONServlet{
 	
 	@Override
 	protected String configureGsonBuilder(GsonBuilder gsonBuilder) throws IntrospectionException {
-//		gsonBuilder.setPrettyPrinting();
 		JSONSerializarDescriptor descriptor=new DescriptionExclusionStrategy(Language.class);
 		gsonBuilder.setExclusionStrategies(descriptor);
 		
