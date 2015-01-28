@@ -33,8 +33,8 @@ import eu.ginere.base.util.file.FileId;
 import eu.ginere.base.util.file.FileUtils;
 import eu.ginere.base.util.i18n.Language;
 import eu.ginere.base.util.image.ImageSize;
-import eu.ginere.base.util.image.ImageUtils;
 import eu.ginere.base.util.notification.Notify;
+import eu.ginere.base.util.properties.GlobalFileProperties;
 import eu.ginere.base.web.connectors.i18n.I18NConnector;
 import eu.ginere.base.web.connectors.rights.RightConnector;
 import eu.ginere.base.web.connectors.rights.RightInterface;
@@ -82,6 +82,8 @@ public abstract class MainServlet extends HttpServlet {
 	public static final int HTTP_CODE_REQUEST_TIMEOUT = 408;
 	public static final int HTTP_SERVICE_UNAVAILABLE=503;
 	public static final int HTTP_BAD_REQUEST=400;
+	public static final int HTTP_NOT_FOUND=404;
+	
 	
 	/**
 	 * Funcion que debe implementarse en los servlets para hacer el trabajo
@@ -1706,51 +1708,51 @@ public abstract class MainServlet extends HttpServlet {
 	}
 	
 
-	/**
-	 * Resizes the image from a file item and return the bytes
-	 * 
-	 * @param fileItem
-	 * @param userId
-	 * @param maxImageWidth
-	 * @param maxImageHeight
-	 * @return
-	 * @throws DaoManagerException
-	 * @throws IOException
-	 */
-	public static byte[] getBytes(FileItem fileItem,int maxImageWidth,int maxImageHeight) throws DaoManagerException, IOException {
-		String mimeType=fileItem.getContentType();
-		
-		if (fileItem == null || fileItem.isFormField() || !ImageSize.isImage(mimeType)){
-			return null;
-		} else {
-			byte[] bytes=fileItem.get();
-			
-			return ImageUtils.createImage(fileItem.getName(),mimeType, bytes, 
-										  maxImageWidth, 
-										  maxImageHeight);			
-		}
-	}
-
-	public FileId insertFile(FileItem fileItem,
-							  String userId,
-							  int maxImageWidth,
-							  int maxImageHeight) throws DaoManagerException, IOException {
-		String mimeType=fileItem.getContentType();
-		
-		if (fileItem == null || fileItem.isFormField() || !ImageSize.isImage(mimeType)){
-			return null;
-		} else {
-			byte[] bytes=fileItem.get();
-			
-			return ImageUtils.createImage(fileItem.getName(), 
-										  mimeType, 
-										  userId, 
-										  bytes, 										  
-										  maxImageWidth, 
-										  maxImageHeight);
-			
-		}
-	}
+//	/**
+//	 * Resizes the image from a file item and return the bytes
+//	 * 
+//	 * @param fileItem
+//	 * @param userId
+//	 * @param maxImageWidth
+//	 * @param maxImageHeight
+//	 * @return
+//	 * @throws DaoManagerException
+//	 * @throws IOException
+//	 */
+//	public static byte[] getBytes(FileItem fileItem,int maxImageWidth,int maxImageHeight) throws DaoManagerException, IOException {
+//		String mimeType=fileItem.getContentType();
+//		
+//		if (fileItem == null || fileItem.isFormField() || !ImageSize.isImage(mimeType)){
+//			return null;
+//		} else {
+//			byte[] bytes=fileItem.get();
+//			
+//			return ImageUtils.createImage(fileItem.getName(),mimeType, bytes, 
+//										  maxImageWidth, 
+//										  maxImageHeight);			
+//		}
+//	}
+//
+//	public FileId insertFile(FileItem fileItem,
+//							  String userId,
+//							  int maxImageWidth,
+//							  int maxImageHeight) throws DaoManagerException, IOException {
+//		String mimeType=fileItem.getContentType();
+//		
+//		if (fileItem == null || fileItem.isFormField() || !ImageSize.isImage(mimeType)){
+//			return null;
+//		} else {
+//			byte[] bytes=fileItem.get();
+//			
+//			return ImageUtils.createImage(fileItem.getName(), 
+//										  mimeType, 
+//										  userId, 
+//										  bytes, 										  
+//										  maxImageWidth, 
+//										  maxImageHeight);
+//			
+//		}
+//	}
 	
 	protected void returnToRedirect(HttpServletRequest request,
 			HttpServletResponse response) throws IOException {
@@ -1758,7 +1760,40 @@ public abstract class MainServlet extends HttpServlet {
 		
 		if (redirectURL!=null){
 			redirect(request, response, redirectURL);
-		} 
-		
+		} 		
 	}
+
+    /**
+     * Overwrite that function if you want spetial times for servlets
+     */
+    public int getTestToManySessionSpetialCallsLap(){
+        int minErrorTime=GlobalFileProperties.getIntValue(ServletSecurity.class, "SessionMinSpetialCallLaps", 3000);
+
+        return minErrorTime;        
+    }
+
+    /**
+     * Overwrite that function if you want spetial times for servlets
+     */
+    public long getTestToManySessionSpetialCallsPunish(){
+		long timeToSleep=GlobalFileProperties.getIntValue(ServletSecurity.class, "SessionMinSpetialCallTimeToSleep", 10000);
+
+        return timeToSleep;        
+    }
+
+
+    /**
+     * Overwrite that function if you want spetial times for servlets
+     */
+    public int getTestToManyRemoteHostSpetialCallsLap(){
+		int minErrorTime=GlobalFileProperties.getIntValue(ServletSecurity.class, "RemoteHostMinSpetialCallLaps", 5000);
+
+        return minErrorTime;
+    }
+
+    public long getTestToManyRemoteHostSpetialCallsPunish(){
+		long timeToSleep=GlobalFileProperties.getIntValue(ServletSecurity.class, "RemoteHostMinSpetialCallTimeToSleep", 10000);
+
+        return timeToSleep;
+    }
 }

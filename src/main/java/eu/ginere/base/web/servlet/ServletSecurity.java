@@ -100,9 +100,11 @@ public class ServletSecurity {
 	
 	private static void testToManySessionSpetialCalls(HttpSession session,MainServlet servlet) {
 		long time=SessionManager.MANAGER.getSession(session).getLastSpetialCallTime();
-		int minErrorTime=GlobalFileProperties.getIntValue(ServletSecurity.class, "SessionMinSpetialCallLaps", 3000);
-		long timeToSleep=GlobalFileProperties.getIntValue(ServletSecurity.class, "SessionMinSpetialCallTimeToSleep", 10000);
-		
+//        int minErrorTime=GlobalFileProperties.getIntValue(ServletSecurity.class, "SessionMinSpetialCallLaps", 3000);
+//        long timeToSleep=GlobalFileProperties.getIntValue(ServletSecurity.class, "SessionMinSpetialCallTimeToSleep", 10000);
+        int minErrorTime=servlet.getTestToManySessionSpetialCallsLap();
+        long timeToSleep=servlet.getTestToManySessionSpetialCallsPunish();
+
 		if ( (System.currentTimeMillis()-time) <minErrorTime){
 			log.warn("ToManySessionSpetialCalls For session ID:"+session.getId()+", uri:'"+servlet.getUri()+"'. Sleeping:"+timeToSleep);
 			try {
@@ -115,8 +117,10 @@ public class ServletSecurity {
 	private static void testToManyRemoteHostSpetialCalls(HttpSession session,MainServlet servlet) {
 		String remoteAddress=SessionManager.MANAGER.getSession(session).getRemoteAddr();
 		long time=RemoteHostSession.MANAGER.getLastSpetialCallTime(remoteAddress);
-		int minErrorTime=GlobalFileProperties.getIntValue(ServletSecurity.class, "RemoteHostMinSpetialCallLaps", 5000);
-		long timeToSleep=GlobalFileProperties.getIntValue(ServletSecurity.class, "RemoteHostMinSpetialCallTimeToSleep", 10000);
+//		int minErrorTime=GlobalFileProperties.getIntValue(ServletSecurity.class, "RemoteHostMinSpetialCallLaps", 5000);
+//		long timeToSleep=GlobalFileProperties.getIntValue(ServletSecurity.class, "RemoteHostMinSpetialCallTimeToSleep", 10000);
+		int minErrorTime=servlet.getTestToManyRemoteHostSpetialCallsLap();
+		long timeToSleep=servlet.getTestToManyRemoteHostSpetialCallsPunish();
 		
 		if ( (System.currentTimeMillis()-time) <minErrorTime){
 			log.warn("ToManyRemoteHostSpetialCalls For remoteHost ID:"+remoteAddress+", uri:'"+servlet.getUri()+"'. Sleeping:"+timeToSleep);
