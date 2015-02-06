@@ -15,6 +15,8 @@ public class ServletInfo {
 
 	private final Class<? extends MainServlet> clazz;
 	
+	private final String name;
+	
 	private long totalNumber=0;
 	private long totalTime=0;
 	private long maxTime=0;
@@ -32,6 +34,7 @@ public class ServletInfo {
 
 	public ServletInfo(Class<? extends MainServlet> clazz){
 		this.clazz=clazz;
+		this.name=clazz.getName();
 	}
 
 	public synchronized void startCall() {
