@@ -50,7 +50,8 @@ public class SessionManager {
 	// private static final Vector SESSION_LIST=new Vector();
 	private final Map<String,AbstractSession> SESSION_HASH=new Hashtable<String,AbstractSession>();
 	
-	private boolean enabled=false;
+	private boolean enabled=GlobalFileProperties.getBooleanValue(SessionManager.class, "enableSessionManager", true);
+//	private boolean enabled=false;
 	
 	private SessionManager(){
 		sessionNumber=0;
@@ -354,6 +355,7 @@ public class SessionManager {
 	}
 
 	public AbstractSession getSession(String sessionId){
+		// TODO If th session manager is disabled disable that
 		return (AbstractSession)SESSION_HASH.get(sessionId);
 	}
 
