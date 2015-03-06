@@ -85,16 +85,24 @@ public class UserSession  {
 //	}
 	
 	static void removeUser(AbstractSession session){
-		String userId=session.getUserId();
-		
-		if (userId!=null){
-			removeUser(session.getUserId(), session);
-		}
+        if (session==null){
+            // session manager can be disabled
+            return;
+        }
+        String userId=session.getUserId();
+        
+        if (userId!=null){
+            removeUser(session.getUserId(), session);
+        }
 	}
 	
 
 	static void removeUser(String userId,AbstractSession session){		
-	
+        if (session==null){
+            // session manager can be disabled
+            return;
+        }
+
 		// the user Id is not null
 		
 		String sessionId=session.getId();
@@ -149,6 +157,11 @@ public class UserSession  {
 	}
 
 	static void setUser(String userId,AbstractSession session){
+        if (session==null){
+            // session manager can be disabled
+            return ;
+        }
+
 		session.setUser(userId);
 		if (!isUserLogged(userId)){
 			callUserConectedListeners(userId);
