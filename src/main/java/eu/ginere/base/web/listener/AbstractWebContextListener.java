@@ -14,6 +14,8 @@ import org.apache.log4j.Logger;
 import eu.ginere.base.util.dao.DaoManagerException;
 import eu.ginere.base.util.notification.Notify;
 import eu.ginere.base.util.properties.GlobalFileProperties;
+import eu.ginere.base.util.test.TestInterface;
+import eu.ginere.base.util.test.TestResult;
 import eu.ginere.base.web.connectors.file.FileConnector;
 import eu.ginere.base.web.connectors.i18n.I18NConnector;
 import eu.ginere.base.web.connectors.jdbc.JDBCConnector;
@@ -29,7 +31,7 @@ import eu.ginere.base.web.servlet.MainServlet;
  * @author Michele Tagliaferri
  * 
  */
-public abstract class AbstractWebContextListener implements ServletContextListener {
+public abstract class AbstractWebContextListener implements ServletContextListener,TestInterface {
 
 	static final Logger log = Logger.getLogger(AbstractWebContextListener.class);
 
@@ -43,6 +45,11 @@ public abstract class AbstractWebContextListener implements ServletContextListen
 	
 	public static final RightInterface ADMIN_TECH_RIGHT=new RightImpl("WEB-ADMIN-01","Mantenimiento Tecnico","Tareas tecnicas de mantenimiento, como actualizar las etiquetas multilingües, etc ...","WEB_COMMON");
 
+	public static final RightInterface SUPER_ADMIN_TECH[]={
+		ADMIN_TECH_RIGHT,
+	};
+
+	
 	private static final RightInterface COMMON_APPLICATION_RIGHT_ARRAY[]={
 		ADMIN_TECH_RIGHT,
 	};
@@ -159,6 +166,18 @@ public abstract class AbstractWebContextListener implements ServletContextListen
 			startDate=new Date();
 			startTime=startDate.getTime();
 			
+			log.warn("----------------------------------------------------");
+			log.warn("Executing test ...:" + appName);
+			TestResult test=test();
+			if (test.isOK()){
+				log.warn(" Tests executed: OK");
+			} else {
+				log.warn(" Tests FAILS: ");
+				log.warn(test);
+				log.warn(" The application is not stoped. After considering the results of the test maybe  you should to stop it!. ");
+			}
+			log.warn("----------------------------------------------------");
+						
 		} catch (Exception e) {
 			if (!GlobalFileProperties.getBooleanValue(AbstractWebContextListener.class, "Installing", false)) {	
 				Notify.fatal(log,"Mientras se iniciaba el contexto:'" + appName + "'", e);
@@ -232,9 +251,11 @@ public abstract class AbstractWebContextListener implements ServletContextListen
 	}
 
 	public static void addServlet(MainServlet mainServlet) {
-		if (!contextServletsMap.contains(mainServlet)){
+		String key=mainServlet.getClass().getName();
+		
+		if (!contextServletsMap.containsKey(key)){
 			contextServlets.add(mainServlet);
-			contextServletsMap.put(mainServlet.getClass().getName(),mainServlet);
+			contextServletsMap.put(key,mainServlet);
 		}
 	}
 	

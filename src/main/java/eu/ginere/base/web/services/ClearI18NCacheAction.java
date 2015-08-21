@@ -37,7 +37,8 @@ public class ClearI18NCacheAction extends ActionServlet {
 	
 	@Override
 	protected RightInterface[] getRights() throws ContextInitializedException {
-		return new RightInterface[]{AbstractWebContextListener.ADMIN_TECH_RIGHT};
+//		return new RightInterface[]{AbstractWebContextListener.ADMIN_TECH_RIGHT};
+		return AbstractWebContextListener.SUPER_ADMIN_TECH;
 	}
 	
 	@Override

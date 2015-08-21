@@ -36,6 +36,7 @@ import eu.ginere.base.util.notification.Notify;
 import eu.ginere.base.util.properties.GlobalFileProperties;
 import eu.ginere.base.web.connectors.i18n.I18NConnector;
 import eu.ginere.base.web.connectors.rights.RightConnector;
+import eu.ginere.base.web.connectors.rights.RightImpl;
 import eu.ginere.base.web.connectors.rights.RightInterface;
 import eu.ginere.base.web.connectors.users.UsersConnector;
 import eu.ginere.base.web.listener.AbstractWebContextListener;
@@ -62,6 +63,10 @@ public abstract class MainServlet extends HttpServlet {
 	// Utilzar esto como derechos de acceso publico
 	protected static final RightInterface[] PUBLIC_ACCESS = null;
 	protected static final RightInterface[] USER_LOGGED = new RightInterface[] {};
+
+	private static final String LOCAL_HOST="127.0.0.1";
+	
+	public static final RightInterface LOCAL_ACCESS_RIGHT=new RightImpl("LOCAL_ACCESS_RIGHT","Local acess allowed","Locas access allowed, by exemple launching preccess","WEB_COMMON");
 
 	public static final String NOT_REMOTE_ADDR_FOUND="NO_REMOTE_ADDR";
 	public static final String NOT_USER_AGENT_FOUND = "NO_USER_AGENT";
@@ -419,7 +424,7 @@ public abstract class MainServlet extends HttpServlet {
 			String userId = getUserId(request);
 			
 			boolean hasPermision = false;
-			hasPermision=hasRights(userId,uri,SERVLET_RIGHTS);
+			hasPermision=hasRights(request,userId,uri,SERVLET_RIGHTS);
 			
 			if (hasPermision) {
 				try {
@@ -573,7 +578,8 @@ public abstract class MainServlet extends HttpServlet {
 		}
 	}
 
-	static public boolean hasRights(String userId, 
+	static public boolean hasRights(HttpServletRequest request,
+									String userId, 
 									String uri,
 									RightInterface permisions[]) {
 
@@ -605,15 +611,25 @@ public abstract class MainServlet extends HttpServlet {
 				return false;
 			} else {
 				for (int i = 0; i < permisions.length; i++) {
-					// si el usuario tiene alguno de los permisos, entra
-					if (RightConnector.hasRight(userId, permisions[i])) {
+					
+					RightInterface permision=permisions[i];
+					if (LOCAL_ACCESS_RIGHT.getId().equals(permision.getId())){
+						String remoteHost=getRemoteAddress(request);
+						if (StringUtils.equalsIgnoreCase(LOCAL_HOST, remoteHost)){
+							if (log.isInfoEnabled()){
+								log.info("La pagina:" + uri + " accept localhost access");
+							}
+							return true;
+						}
+					} else if (RightConnector.hasRight(userId, permision)) {
+						// si el usuario tiene alguno de los permisos, entra
 						if (log.isInfoEnabled()){
 							log.info("El usuario:'" + userId
-									 + "' tiene el permiso':" + permisions[i]
+									 + "' tiene el permiso':" + permision
 									 + "' para la pagina:'" + uri + "'");
 						}
 						return true;
-					}
+					} 
 				}
 				if (log.isInfoEnabled()) {
 					log.info("El El usuario:'" + userId
