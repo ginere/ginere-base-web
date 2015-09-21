@@ -521,7 +521,7 @@ public abstract class MainServlet extends HttpServlet {
 				
 				if (log.isInfoEnabled()){
 					log.info("El usuario:'"+userId+
-							 "' ha tratado el servlet :'" + getURI(request)+
+							 "' ha tratado el servlet :'" + getURI(request)+"["+getClass().getName()+"]"+
 							 "' en:"+(System.currentTimeMillis()-time)+
 							 " milisgundos.");
 				}
@@ -607,6 +607,12 @@ public abstract class MainServlet extends HttpServlet {
 			if (userId == null) { // si no hay usuario no se entra
 				if (log.isInfoEnabled()){
 					log.info("No hay usuario conectado, se deniega el acceso a la pagina:'"+uri+"'");
+				}
+				// testing the local access right
+				for (int i = 0; i < permisions.length; i++) {
+					if (LOCAL_ACCESS_RIGHT.getId().equals(permisions[i].getId())){
+						return true;
+					}
 				}
 				return false;
 			} else {

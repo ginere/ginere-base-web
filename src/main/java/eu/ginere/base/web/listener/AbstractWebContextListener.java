@@ -43,7 +43,7 @@ public abstract class AbstractWebContextListener implements ServletContextListen
 	private static final Hashtable <String,MainServlet>contextServletsMap=new Hashtable<String,MainServlet>();
 	
 	
-	public static final RightInterface ADMIN_TECH_RIGHT=new RightImpl("WEB-ADMIN-01","Mantenimiento Tecnico","Tareas tecnicas de mantenimiento, como actualizar las etiquetas multilingües, etc ...","WEB_COMMON");
+	public static final RightInterface ADMIN_TECH_RIGHT=new RightImpl("ADMIN_TECH_RIGHT","TECH_ADMIN","Technical administration","WEB_COMMON");
 
 	public static final RightInterface SUPER_ADMIN_TECH[]={
 		ADMIN_TECH_RIGHT,

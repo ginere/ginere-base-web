@@ -31,7 +31,8 @@ public abstract class JSONServlet extends MainServlet {
 
 	// constructor gsons
 	protected Gson gSonData;
-	private static final String JSON_DATE_FORMAT = "dd/MM/yyyy HH:mm:ss ZZZZ"; // Ejemplo 07/10/2011 11:03:01 +0300 Est json format "d/m/Y H:i:s O" 
+//	private static final String JSON_DATE_FORMAT = "dd/MM/yyyy HH:mm:ss ZZZZ"; // Ejemplo 07/10/2011 11:03:01 +0300 Est json format "d/m/Y H:i:s O" 
+	private static final String JSON_DATE_FORMAT = "dd/MM/yyyy HH:mm"; // Ejemplo 07/10/2011 11:03:01 +0300 Est json format "d/m/Y H:i:s O" 
 	public static final String EXT_DATE_FORMAT = "d/m/Y H:i:s O"; // el formato inverso a JSON_DATE_FORMAT para usar en Ext
 	
 	
