@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>eu.ginere</groupId>
 	<artifactId>ginere-base-web</artifactId>
-	<version>1.0.1</version>
+	<version>1.0.2-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<name>Ginere web base</name>
@@ -44,7 +44,7 @@
 		<developerConnection>scm:git:https://github.com/ginere/ginere-base-web</developerConnection>
 
 		<url>https://github.com/ginere/ginere-base-web</url>
-	  <tag>ginere-base-web-1.0.1</tag>
+	  <tag>HEAD</tag>
   </scm>
 
 	<organization>
