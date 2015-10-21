@@ -16,7 +16,7 @@ public abstract class ActionServlet extends MainServlet {
 	protected void doService(HttpServletRequest request,
 							 HttpServletResponse response) throws ServletException, IOException,DaoManagerException {
 		doSimpleActionService(request, response);
-		
+
 		return;
 	}
 

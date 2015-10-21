@@ -57,7 +57,7 @@ public abstract class JSONServlet extends MainServlet {
 //		gsonBuilder.registerTypeAdapter(SQLEnum.class, new SQLEnumSerializer());
 //		gsonBuilder.registerTypeAdapter(FileId.class, new FileIdSerializer());
 		
-		GsonBuilder gsonBuilder=createGsonBuilder();
+		GsonBuilder gsonBuilder=createGsonBuilder(getDateFormat());
 		
 //		gsonBuilder.setPrettyPrinting();
 		try {
@@ -71,16 +71,19 @@ public abstract class JSONServlet extends MainServlet {
 		gSonData = gsonBuilder.create();
 	}
 	
-	public static GsonBuilder createGsonBuilder() throws ServletException {
+	public String getDateFormat(){
+		return JSON_DATE_FORMAT;
+	}
+	public static GsonBuilder createGsonBuilder(String dateFormat) throws ServletException {
 
 		GsonBuilder gsonBuilder = new GsonBuilder();
 		
 		gsonBuilder.serializeNulls();
-		gsonBuilder.setDateFormat(JSON_DATE_FORMAT);
+		gsonBuilder.setDateFormat(dateFormat);
 		
 		// Registrando las enumeraciones Pero no funciona por que no se pueden registrar interfaces.
 		// gsonBuilder.registerTypeAdapter(SQLEnum.class, new SQLEnumSerializer());
-		gsonBuilder.registerTypeAdapter(Timestamp.class, new TimestampSerializer(JSON_DATE_FORMAT));
+		gsonBuilder.registerTypeAdapter(Timestamp.class, new TimestampSerializer(dateFormat));
 		gsonBuilder.registerTypeAdapter(SQLEnum.class, new SQLEnumSerializer());
 		gsonBuilder.registerTypeAdapter(FileId.class, new FileIdSerializer());
 		gsonBuilder.registerTypeAdapter(I18NLabel.class, new I18NLabelSerializer());

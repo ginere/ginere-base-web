@@ -1234,9 +1234,9 @@ public abstract class MainServlet extends HttpServlet {
 		try {
 			return sdf.parse(value);
 		} catch (Exception e) {
-			throw new ServletException("El parametro:'" + parameterName
-									   + "' con valor :'" + value
-									   + "' no se puede transformar en un Date ", e);
+			throw new ServletException("The parameter:'" + parameterName
+									   + "' with value :'" + value
+									   + "' can not be formated as a date. Check the date format ", e);
 		}
 	}
 
@@ -1252,9 +1252,9 @@ public abstract class MainServlet extends HttpServlet {
 				return Integer.parseInt(value);
 			} catch (Exception e) {
 				if (log.isDebugEnabled()){
-					log.debug("El parametro:'" + parameterName
-							  + "' con valor :'" + value
-							  + "' no se puede transformar en un Integer ", e);
+					log.debug("The parameter:'" + parameterName
+							  + "' with value :'" + value
+							  + "' can not be transformed into an Integer ", e);
 				}
 				return defaultValue;
 			}

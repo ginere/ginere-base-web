@@ -50,7 +50,7 @@ public class SessionManager {
 	// private static final Vector SESSION_LIST=new Vector();
 	private final Map<String,AbstractSession> SESSION_HASH=new Hashtable<String,AbstractSession>();
 	
-	private boolean enabled=GlobalFileProperties.getBooleanValue(SessionManager.class, "enableSessionManager", true);
+	private boolean enabled=GlobalFileProperties.getBooleanValue(SessionManager.class, "enableSessionManager", false);
 //	private boolean enabled=false;
 	
 	private SessionManager(){
