@@ -40,10 +40,13 @@ public class SendJSLog extends MainServlet {
 							 HttpServletResponse response) throws ServletException,IOException,DaoManagerException{
 		int level = getMandatoryIntParameter(request, "level");
 		String msg = getMandatoryStringParameter(request, "msg");
-		AbstractSession absSession=SessionManager.MANAGER.getSession(request);
+		AbstractSession absSession=SessionManager.MANAGER.getSession(request,null);
 
-		msg=absSession.getTraceMessage()+"\nRemote Message JS:\n-----\n"+msg+"\n-----\n";
-
+		if (absSession!=null){
+			msg=absSession.getTraceMessage()+"\nRemote Message JS:\n-----\n"+msg+"\n-----\n";
+		} else {
+			msg="NO_SESSION \nRemote Message JS:\n-----\n"+msg+"\n-----\n";
+		}
 		/*
 		log.warn("--------------------------------------------");
 		log.warn("Notifications level:"+level);

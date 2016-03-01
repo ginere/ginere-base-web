@@ -8,6 +8,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Enumeration;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -47,9 +49,9 @@ import eu.ginere.base.web.session.SessionAccesor;
 import eu.ginere.base.web.session.SessionManager;
 
 /**
- * @author ventura
+ * @author ginere
  *
- * Garantiza que siempre habra un una lengua en el thread que trata la peticion
+ * Main classs for http services with utils to handle request, languages, users, cache, etc ...
  *
  */
 @SuppressWarnings("serial")
@@ -72,6 +74,8 @@ public abstract class MainServlet extends HttpServlet {
 	public static final String NOT_USER_AGENT_FOUND = "NO_USER_AGENT";
 
 	private static final String NOT_UUID_FOUND = "NO_UUID_FOUND";
+	
+	private static final String JUST_LOGIN = MainServlet.class.getName()+"JUST_LOGIN";
 	
 	/*
 	 * 10.4.4 403 Forbidden The server understood the request, but is refusing
@@ -216,6 +220,8 @@ public abstract class MainServlet extends HttpServlet {
 	protected static final String REDIRECT_URL = "redir";
 
 
+
+
 	 /*
 	 * Sets the Last-Modified entity header field, if it has not already been
 	 * set and if the value is meaningful. Called before doGet, to ensure that
@@ -256,6 +262,33 @@ public abstract class MainServlet extends HttpServlet {
 			log.debug("Setting last Modified:'"+sdf.format(new Date(lastModified))+"' last Modified:"+lastModified);
 		}
 		resp.setDateHeader(HEADER_LASTMOD, lastModified);
+	}
+
+	 /*
+	 * Sets the Last-Modified entity header field, if it has not already been
+	 * set and if the value is meaningful. Called before doGet, to ensure that
+	 * headers are set before response data is written. A subclass might have
+	 * set this header already, so we check.
+	 */
+	private void maybeSetLastModified(HttpServletResponse resp,
+			long lastModified) {
+		
+		if (resp.containsHeader(HEADER_LASTMOD)){
+			log.warn("Header:"+HEADER_LASTMOD+" already set. Avoiging setting new value");
+			return;
+		} else {
+			// attention here may be transform from millis to secons. Ex: ((lastModified/1000)+1)*1000
+			// This is faster with the same result: lastModified+1000
+			// 2016-02-18 15:12:21,900 DEBUG [http-apr-9080-exec-7] servlet.MainServlet (MainServlet.java:471) - Page Last Modified:'16-02-18 15:08:49 078' last Modified:1455804529078
+			// 2016-02-18 15:12:21,900 DEBUG [http-apr-9080-exec-7] servlet.MainServlet (MainServlet.java:472) - Requ last Modified:'16-02-18 15:08:49 000' last Modified:1455804529000
+			long value=lastModified+1000;
+			
+			if (log.isDebugEnabled()){
+				SimpleDateFormat sdf=new SimpleDateFormat("yy-MM-dd HH:mm:ss SSS");
+				log.debug("Setting last Modified:'"+sdf.format(new Date(value))+"' last Modified:"+value+" < "+sdf.format(new Date(lastModified)));
+			}
+			resp.setDateHeader(HEADER_LASTMOD, value);
+		}
 	}
 
 
@@ -354,7 +387,7 @@ public abstract class MainServlet extends HttpServlet {
 			
 			// SECURITY
 			// IF it is the first cookie redirect to captha
-            if (ServletSecurity.isInitialized()){
+            if (ServletSecurity.isEnabled()){
 				long securityTestCheckTime=System.currentTimeMillis();
 				try {
 					
@@ -422,6 +455,7 @@ public abstract class MainServlet extends HttpServlet {
 		
 			// Permisions and user stuff
 			String userId = getUserId(request);
+			setThreadLocaluserId(userId);
 			
 			boolean hasPermision = false;
 			hasPermision=hasRights(request,userId,uri,SERVLET_RIGHTS);
@@ -432,61 +466,71 @@ public abstract class MainServlet extends HttpServlet {
 					if (method.equals(METHOD_GET)) {
 						long lastModified = getLastModifiedException(request);
 							if (lastModified >0 ) {
+								// transforming last modfied into second 
+								
 								long ifModifiedSince = request.getDateHeader(HEADER_IFMODSINCE);
 								if (log.isDebugEnabled()){
 									SimpleDateFormat sdf=new SimpleDateFormat("yy-MM-dd HH:mm:ss SSS");
-									log.debug("Getting last Modified from request header:'"+sdf.format(new Date(ifModifiedSince))+"' last Modified:"+ifModifiedSince);
+									log.debug("Page Last Modified:'"+sdf.format(new Date(lastModified))+"' last Modified:"+lastModified);
+									log.debug("Requ last Modified:'"+sdf.format(new Date(ifModifiedSince))+"' last Modified:"+ifModifiedSince);
+									
+									Enumeration<String> names=request.getHeaderNames();
+									while(names.hasMoreElements()){
+										String name =  names.nextElement();
+										String value=request.getHeader(name);
+										log.debug("Header ["+name+"]='"+value+"'");
+									}
 								}
-//							long lastModifiedRounded=(lastModified / 1000 * 1000);
-//							if (ifModifiedSince <  lastModifiedRounded) {
-//								// If the servlet mod time is later, call doGet()
-//								// Round down to the nearest second for a proper compare
-//								// A ifModifiedSince of -1 will always be less
-//								maybeSetLastModified(response, lastModified);
-//								// Se sigue con la query normal
-//							} else if (ifModifiedSince >  (time-1000)) {
-//								// If they are the same we dont change de lasta modified but que resent the content.
-//								// We have a precision of one second only ...
-//								maybeSetLastModified(response, lastModified);
-//							} else {
-//								if (log.isInfoEnabled()){
-//									SimpleDateFormat sdf=new SimpleDateFormat("yy-MM-dd HH:mm:ss SSS");
-//									log.info("AVOIDING!! query last modified:'"+sdf.format(new Date(ifModifiedSince))+" "+ifModifiedSince+
-//											" ' last Modified:"+sdf.format(new Date( (lastModified / 1000 * 1000)))+" "+ (lastModified / 1000 * 1000)+
-//											" ' Real last Modified:"+sdf.format(new Date(lastModified))+" "+lastModified+
-//											"  time:"+(System.currentTimeMillis()-time));
-//								}
-//								response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
-//								return ;
-//							}
+	//							long lastModifiedRounded=(lastModified / 1000 * 1000);
+	//							if (ifModifiedSince <  lastModifiedRounded) {
+	//								// If the servlet mod time is later, call doGet()
+	//								// Round down to the nearest second for a proper compare
+	//								// A ifModifiedSince of -1 will always be less
+	//								maybeSetLastModified(response, lastModified);
+	//								// Se sigue con la query normal
+	//							} else if (ifModifiedSince >  (time-1000)) {
+	//								// If they are the same we dont change de lasta modified but que resent the content.
+	//								// We have a precision of one second only ...
+	//								maybeSetLastModified(response, lastModified);
+	//							} else {
+	//								if (log.isInfoEnabled()){
+	//									SimpleDateFormat sdf=new SimpleDateFormat("yy-MM-dd HH:mm:ss SSS");
+	//									log.info("AVOIDING!! query last modified:'"+sdf.format(new Date(ifModifiedSince))+" "+ifModifiedSince+
+	//											" ' last Modified:"+sdf.format(new Date( (lastModified / 1000 * 1000)))+" "+ (lastModified / 1000 * 1000)+
+	//											" ' Real last Modified:"+sdf.format(new Date(lastModified))+" "+lastModified+
+	//											"  time:"+(System.currentTimeMillis()-time));
+	//								}
+	//								response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
+	//								return ;
+	//							}
+								
+								
+								
+	//							El problema viene de que esta cabecera solo acepta una resolucion de hasta un segundo.
+	//							Si un dato es regenerado en el mismo segundo varias veces no sabemos si se ha enviado.
+	//							En este header enviamos la fecha a la que el cliente hizo la paticion por lo que si conincide con el
+	//							last modified del los datos del servidor no sabemos si tiene la version correcta puesto que puede haber sido actualizado
+	//							en el mismo segundo, por lo que en ese caso volvemos a enviar la informacion.
+	//							solo le devolvemos un 304 si la fecha del if-modify-since es mayor que la del last modified del servidor con un margen de un segundo
 							
-							
-							
-//							El problema viene de que esta cabecera solo acepta una resolucion de hasta un segundo.
-//							Si un dato es regenerado en el mismo segundo varias veces no sabemos si se ha enviado.
-//							En este header enviamos la fecha a la que el cliente hizo la paticion por lo que si conincide con el
-//							last modified del los datos del servidor no sabemos si tiene la version correcta puesto que puede haber sido actualizado
-//							en el mismo segundo, por lo que en ese caso volvemos a enviar la informacion.
-//							solo le devolvemos un 304 si la fecha del if-modify-since es mayor que la del last modified del servidor con un margen de un segundo
-							
-							if (ifModifiedSince <=  (lastModified+1000)) {
-								// If the servlet mod time is later, call doGet()
-								// Round down to the nearest second for a proper compare
-								// A ifModifiedSince of -1 will always be less
-								maybeSetLastModified(response);
-								// Se sigue con la query normal
-							} else {
-								if (log.isInfoEnabled()){
-									SimpleDateFormat sdf=new SimpleDateFormat("yy-MM-dd HH:mm:ss SSS");
-									log.info("AVOIDING!! query last modified:'"+sdf.format(new Date(ifModifiedSince))+" "+ifModifiedSince+
-											" ' last Modified:"+sdf.format(new Date( (lastModified / 1000 * 1000)))+" "+ (lastModified / 1000 * 1000)+
-											" ' Real last Modified:"+sdf.format(new Date(lastModified))+" "+lastModified+
-											"  time:"+(System.currentTimeMillis()-time));
+								if (ifModifiedSince <=  lastModified) {
+									// If the servlet mod time is later, call doGet()
+									// Round down to the nearest second for a proper compare
+									// A ifModifiedSince of -1 will always be less
+									maybeSetLastModified(response,lastModified);
+									// Se sigue con la query normal
+								} else {
+									if (log.isInfoEnabled()){
+										SimpleDateFormat sdf=new SimpleDateFormat("yy-MM-dd HH:mm:ss SSS");
+										log.info("AVOIDING!! query last modified:'"+sdf.format(new Date(ifModifiedSince))+" "+ifModifiedSince+
+												" ' last Modified:"+sdf.format(new Date( (lastModified / 1000 * 1000)))+" "+ (lastModified / 1000 * 1000)+
+												" ' Real last Modified:"+sdf.format(new Date(lastModified))+" "+lastModified+
+												"  time:"+(System.currentTimeMillis()-time));
+									}
+									response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
+									return ;
 								}
-								response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
-								return ;
 							}
-						}
 					}
 					// END LAST UPDATE
 					
@@ -520,15 +564,15 @@ public abstract class MainServlet extends HttpServlet {
 				}
 				
 				if (log.isInfoEnabled()){
-					log.info("El usuario:'"+userId+
-							 "' ha tratado el servlet :'" + getURI(request)+"["+getClass().getName()+"]"+
-							 "' en:"+(System.currentTimeMillis()-time)+
-							 " milisgundos.");
+					log.info("The user:'"+userId+
+							 "' executed the servlet :'" + getURI(request)+"["+getClass().getName()+"]"+
+							 "' in:"+(System.currentTimeMillis()-time)+
+							 " millis.");
 				}
 			} else {
-				String message="El usuario:'"+userId+
-				 "' no tiene ninguno de los permisos:'"+StringUtils.join(SERVLET_RIGHTS, ',')+
-				 "' necesarios para la pagina:" + getURI(request)+"'";
+				String message="The user:'"+userId+
+				 "' do not have any of the needed rights:'"+StringUtils.join(SERVLET_RIGHTS, ',')+
+				 "' of the page:" + getURI(request)+"'";
 				
 				if (log.isInfoEnabled()){
 //					String permisosList=StringUtils.join(SERVLET_RIGHTS, ',');
@@ -538,6 +582,7 @@ public abstract class MainServlet extends HttpServlet {
 				redirectNoUserRight(request, response, userId);
 			}
 		}finally{
+			removeThreadLocaluserId();
 			servletInfo.addLaps(System.currentTimeMillis()-time);
 		}
 	}
@@ -547,7 +592,7 @@ public abstract class MainServlet extends HttpServlet {
 			// hay permisos definidos
 			if (userId == null) { // si no hay usuario no se entra
 				if (log.isInfoEnabled()){
-					log.info("No hay usuario conectado, se deniega el acceso a la pagina:'"+uri+"'");
+					log.info("There is not connected user, the acces is denied to the page:'"+uri+"'");
 				}
 				return false;
 			} else {
@@ -555,24 +600,24 @@ public abstract class MainServlet extends HttpServlet {
 					// si el usuario tiene alguno de los permisos, entra
 					if (RightConnector.hasRight(userId, permisions[i])) {
 						if (log.isInfoEnabled()){
-							log.info("El usuario:'" + userId
-									 + "' tiene el permiso':" + permisions[i]
-									 + "' para la pagina:'" + uri + "'");
+							log.info("The user:'" + userId
+									 + "' does not have the right':" + permisions[i]
+									 + "' for the url:'" + uri + "'");
 						}
 						return true;
 					}
 				}
 				if (log.isInfoEnabled()) {
-					log.info("El El usuario:'" + userId
-							+ "' no tiene ninguno de los permisos:'"
+					log.info("The user:'" + userId
+							+ "' does not have any of the rights:'"
 							+ StringUtils.join(permisions)
-							+ "' para la pagina:'" + uri + "'");
+							+ "' for the url:'" + uri + "'");
 				}
 				return false;
 			}
 		} else {
 			if (log.isInfoEnabled()) {
-				log.info("La pagina:" + uri + " no tiene permisos asociados");
+				log.info("The url:" + uri + " does not have associated rights");
 			}
 			return true;
 		}
@@ -585,14 +630,14 @@ public abstract class MainServlet extends HttpServlet {
 
 		if (permisions == null){
 			if (log.isInfoEnabled()) {
-				log.info("La pagina:" + uri + " no tiene permisos asociados");
+				log.info("The url:" + uri + " does not have associated rights");
 			}
 			return true;
 		} else if (permisions.length == 0){
 			// user must be logged
 			if (userId == null) { // si no hay usuario no se entra
 				if (log.isInfoEnabled()){
-					log.info("No hay usuario conectado, se deniega el acceso a la pagina:'"+uri+"'");
+					log.info("There is no connected user, access denied to the url:'"+uri+"'");
 				}
 				return false;
 			} else {
@@ -606,7 +651,7 @@ public abstract class MainServlet extends HttpServlet {
 			// hay permisos definidos
 			if (userId == null) { // si no hay usuario no se entra
 				if (log.isInfoEnabled()){
-					log.info("No hay usuario conectado, se deniega el acceso a la pagina:'"+uri+"'");
+					log.info("There is not connected user, the acces is denied to the url:'"+uri+"'");
 				}
 				// testing the local access right
 				for (int i = 0; i < permisions.length; i++) {
@@ -623,25 +668,25 @@ public abstract class MainServlet extends HttpServlet {
 						String remoteHost=getRemoteAddress(request);
 						if (StringUtils.equalsIgnoreCase(LOCAL_HOST, remoteHost)){
 							if (log.isInfoEnabled()){
-								log.info("La pagina:" + uri + " accept localhost access");
+								log.info("The url:" + uri + " accept localhost access");
 							}
 							return true;
 						}
 					} else if (RightConnector.hasRight(userId, permision)) {
 						// si el usuario tiene alguno de los permisos, entra
 						if (log.isInfoEnabled()){
-							log.info("El usuario:'" + userId
-									 + "' tiene el permiso':" + permision
-									 + "' para la pagina:'" + uri + "'");
+							log.info("The user:'" + userId
+									 + "' has the role':" + permision
+									 + "' for the url:'" + uri + "'");
 						}
 						return true;
 					} 
 				}
 				if (log.isInfoEnabled()) {
-					log.info("El El usuario:'" + userId
-							+ "' no tiene ninguno de los permisos:'"
+					log.info("The user:'" + userId
+							+ "' does not have any of the rights:'"
 							 + StringUtils.join(permisions)
-							 + "' para la pagina:'" + uri + "'");
+							 + "' for the url:'" + uri + "'");
 				}
 				return false;
 			}
@@ -723,9 +768,9 @@ public abstract class MainServlet extends HttpServlet {
 			// return new Long(value);
 			return Long.parseLong(value);
 		} catch (Exception e) {
-			throw new ServletException("El parametro:'" + parameterName
-					+ "' con valor :'" + value
-					+ "' no se puede transformar en un long ", e);
+			throw new ServletException("The parameter:'" + parameterName
+					+ "' with value :'" + value
+					+ "' can not be transforned into a long ", e);
 		}
 	}
 
@@ -736,9 +781,9 @@ public abstract class MainServlet extends HttpServlet {
 		try {
 			return Boolean.parseBoolean(value);
 		} catch (Exception e) {
-			throw new ServletException("El parametro:'" + parameterName
-					+ "' con valor :'" + value
-					+ "' no se puede transformar en un boolean. ", e);
+			throw new ServletException("The parameter:'" + parameterName
+					+ "' with value :'" + value
+					+ "' can not be transformed into a boolean. ", e);
 		}
 	}
 
@@ -749,9 +794,9 @@ public abstract class MainServlet extends HttpServlet {
 		try {
 			return Integer.parseInt(value);
 		} catch (Exception e) {
-			throw new ServletException("El parametro:'" + parameterName
-					+ "' con valor :'" + value
-					+ "' no se puede transformar en un int ", e);
+			throw new ServletException("The parameter:'" + parameterName
+					+ "' with value :'" + value
+					+ "' can not be transformed into an int ", e);
 		}
 	}
 
@@ -776,8 +821,8 @@ public abstract class MainServlet extends HttpServlet {
 //			return Enum.valueOf(enumType, value);
 //		} catch (Exception e) {
 //			throw new ServletException("El parametro:'" + parameterName
-//					+ "' con valor :'" + value
-//					+ "' no se puede transformar en un enumerado ", e);
+//					+ "' with value :'" + value
+//					+ "' can not be transformed into one enumerado ", e);
 //		}
 //	}
 	
@@ -788,9 +833,9 @@ public abstract class MainServlet extends HttpServlet {
 		try {
 			return SQLEnum.valueUseWithCare(enumType, value);
 		} catch (Exception e) {
-			throw new ServletException("El parametro:'" + parameterName
-					+ "' con valor :'" + value
-					+ "' no se puede transformar en un enumerado ", e);
+			throw new ServletException("The parameter:'" + parameterName
+					+ "' with value :'" + value
+					+ "' can not be transformed into an SQLEnum ", e);
 		}
 	}
 
@@ -808,9 +853,9 @@ public abstract class MainServlet extends HttpServlet {
 				return SQLEnum.valueUseWithCare(enumType, value);
 			} catch (Exception e) {
 				if (log.isDebugEnabled()){
-					log.debug("El parametro:'" + parameterName
-							  + "' con valor :'" + value
-							  + "' no se puede transformar en un enumerado ", e);
+					log.debug("The parameter:'" + parameterName
+							  + "' with value :'" + value
+							  + "' can not be transformed into an SQLEnum ", e);
 				}
 				return defaultValue;				
 			}
@@ -818,17 +863,51 @@ public abstract class MainServlet extends HttpServlet {
 	}
 
 
+	public static String getSessionUserId(HttpServletRequest request) {
+		HttpSession session = request.getSession(false);
+		
+		if (session!=null){
+			String userId=getUserId(session);
+			
+			return userId;
+		} else {
+			return null;
+		}
+	}
+	
 	static public String getUserId(HttpServletRequest request) {
 		HttpSession session = request.getSession();
 		
-		return getUserId(session);
+		String userId=getUserId(session);
 
-//		String userId=request.getRemoteUser();
-//		if (userId==null){
-//			return null;
-//		} else {
-//			return userId.toLowerCase();
-//		}
+		if (userId == null) {
+			userId=request.getRemoteUser();
+			if (userId==null){
+				return null;
+			} else {
+				// BASHE AUTH login				
+				return callRemoteUserLoginListener(request,userId);
+			}
+		} else {
+			return userId;
+		}
+	}
+
+	private static String callRemoteUserLoginListener(HttpServletRequest request, String userId) {
+		log.info("Loggin from remote user:"+userId+" uri:"+getURI(request));
+		setUserId(request, userId);
+		request.setAttribute(JUST_LOGIN, userId);
+		return userId;
+	}
+	
+	public static String getJustLogin(HttpServletRequest request,String defaultValue){
+		String ret=(String)request.getAttribute(JUST_LOGIN);
+		
+		if (ret==null){
+			return defaultValue;
+		} else {
+			return ret;
+		}
 	}
 
 	public static String getUserId(HttpSession session) {
@@ -842,9 +921,8 @@ public abstract class MainServlet extends HttpServlet {
 
 	public static void setUserId(HttpServletRequest request,
 							   String userId) {
-		String oldUserId=getUserId(request);
 		HttpSession session = request.getSession();
-		// session.setAttribute(LOGIN_SESSION_PARAMETER_NAME, user);
+		String oldUserId=getUserId(session);
 		
 		if (!StringUtils.equals(userId, oldUserId)){
 			SessionAccesor.setUserId(session,userId);
@@ -912,12 +990,18 @@ public abstract class MainServlet extends HttpServlet {
 	public String[] getStringParameterArray(HttpServletRequest request,
 											String parameterName, 
 											String separator) {
+		String values[]=request.getParameterValues(parameterName);
 		String value = getStringParameter(request, parameterName, null);
-		
-		if (value==null || "".equals(value)){
-			return EMPTY_STRING_ARRAY;
+
+		// For get requests
+		if (values !=null && values.length>0){
+			return values;
 		} else {
-			return StringUtils.split(value,separator);	
+			if (value==null || "".equals(value)){
+				return EMPTY_STRING_ARRAY;
+			} else {
+				return StringUtils.split(value,separator);	
+			}
 		}
 	}
 
@@ -943,9 +1027,9 @@ public abstract class MainServlet extends HttpServlet {
 					ret[i]=new Double(value);
 				} catch (Exception e) {
 					if (log.isDebugEnabled()){
-						log.debug("El parametro:'" + parameterName
-								  + "' con valor :'" + value
-								  + "' no se puede transformar en un Double ", e);
+						log.debug("The parameter:'" + parameterName
+								  + "' with value :'" + value
+								  + "' can not be transformed into a Double ", e);
 					}
 					ret[i]=defaultValue;
 				}				
@@ -979,9 +1063,9 @@ public abstract class MainServlet extends HttpServlet {
 					ret[i]=Long.parseLong(value);
 				} catch (Exception e) {
 					if (log.isDebugEnabled()){
-						log.debug("El parametro:'" + parameterName
-								  + "' con valor :'" + value
-								  + "' no se puede transformar en un Long ", e);
+						log.debug("the parameter:'" + parameterName
+								  + "' with value :'" + value
+								  + "' can not be transformed into a Long ", e);
 					}
 					ret[i]=defaultValue;
 				}				
@@ -1011,9 +1095,9 @@ public abstract class MainServlet extends HttpServlet {
 				return Long.parseLong(value);
 			} catch (Exception e) {
 				if (log.isDebugEnabled()){
-					log.debug("El parametro:'" + parameterName
-							  + "' con valor :'" + value
-							  + "' no se puede transformar en un long ", e);
+					log.debug("The parameter:'" + parameterName
+							  + "' with value :'" + value
+							  + "' can not be transformed into a long ", e);
 				}
 				return defaultValue;
 			}
@@ -1038,9 +1122,9 @@ public abstract class MainServlet extends HttpServlet {
 					ret[i]=Integer.parseInt(value);
 				} catch (Exception e) {
 					if (log.isDebugEnabled()){
-						log.debug("El parametro:'" + parameterName
-								  + "' con valor :'" + value
-								  + "' no se puede transformar en un int ", e);
+						log.debug("The parameter:'" + parameterName
+								  + "' with value :'" + value
+								  + "' can not be transformed into one int ", e);
 					}
 					ret[i]=defaultValue;
 				}				
@@ -1068,9 +1152,9 @@ public abstract class MainServlet extends HttpServlet {
 				return Integer.parseInt(value);
 			} catch (Exception e) {
 				if (log.isDebugEnabled()){
-					log.debug("El parametro:'" + parameterName
-							  + "' con valor :'" + value
-							  + "' no se puede transformar en un intero ", e);
+					log.debug("The parameter:'" + parameterName
+							  + "' with value :'" + value
+							  + "' can not be transformed into one intero ", e);
 				}
 				return defaultValue;
 			}
@@ -1089,9 +1173,9 @@ public abstract class MainServlet extends HttpServlet {
 				return Boolean.parseBoolean(value);
 			} catch (Exception e) {
 				if (log.isDebugEnabled()){
-					log.debug("El parametro:'" + parameterName
-							  + "' con valor :'" + value
-							  + "' no se puede transformar en un boolean ", e);
+					log.debug("The parameter:'" + parameterName
+							  + "' with value :'" + value
+							  + "' can not be transformed into one boolean ", e);
 				}
 				return defaultValue;
 			}
@@ -1114,9 +1198,9 @@ public abstract class MainServlet extends HttpServlet {
 //			try {
 //				return Enum.valueOf(enumType, value);
 //			} catch (Exception e) {
-//				throw new ServletException("El parametro:'" + parameterName
-//						+ "' con valor :'" + value
-//						+ "' no se puede transformar en un enumerado ", e);
+//				throw new ServletException("The parameter:'" + parameterName
+//						+ "' with value :'" + value
+//						+ "' can not be transformed into one enumerado ", e);
 //			}
 //		}
 //	}
@@ -1139,9 +1223,9 @@ public abstract class MainServlet extends HttpServlet {
 				return SQLEnum.valueUseWithCare(enumType, value);
 			} catch (Exception e) {
 				if (log.isDebugEnabled()){
-					log.debug("El parametro:'" + parameterName
-							  + "' con valor :'" + value
-							  + "' no se puede transformar en un enumerado ", e);
+					log.debug("The parameter:'" + parameterName
+							  + "' with value :'" + value
+							  + "' can not be transformed into one enumerado ", e);
 				}
 				return defaultValue;
 			}
@@ -1161,9 +1245,9 @@ public abstract class MainServlet extends HttpServlet {
 				return new Float(value);
 			} catch (Exception e) {
 				if (log.isDebugEnabled()){
-					log.debug("El parametro:'" + parameterName
-							  + "' con valor :'" + value
-							  + "' no se puede transformar en un Float ", e);
+					log.debug("The parameter:'" + parameterName
+							  + "' with value :'" + value
+							  + "' can not be transformed into one Float ", e);
 				}
 				return defaultValue;
 			}
@@ -1183,9 +1267,9 @@ public abstract class MainServlet extends HttpServlet {
 				return new Double(value);
 			} catch (Exception e) {
 				if (log.isDebugEnabled()){
-					log.debug("El parametro:'" + parameterName
-							  + "' con valor :'" + value
-							  + "' no se puede transformar en un Double ", e);
+					log.debug("The parameter:'" + parameterName
+							  + "' with value :'" + value
+							  + "' can not be transformed into one Double ", e);
 				}
 				return defaultValue;
 			}
@@ -1199,9 +1283,9 @@ public abstract class MainServlet extends HttpServlet {
 		try {
 			return new Double(value);
 		} catch (Exception e) {
-			throw new ServletException("El parametro obligatorio:'" + parameterName
-									   + "' con valor :'" + value
-									   + "' no se puede transformar en un Double ", e);
+			throw new ServletException("The mandatory parameter:'" + parameterName
+									   + "' with value :'" + value
+									   + "' can not be transformed into one Double ", e);
 		}
 	}
 	public Date getDateParameter(HttpServletRequest request,
@@ -1217,9 +1301,9 @@ public abstract class MainServlet extends HttpServlet {
 				return sdf.parse(value);
 			} catch (Exception e) {
 				if (log.isDebugEnabled()){
-					log.debug("El parametro:'" + parameterName
-						+ "' con valor :'" + value
-						+ "' no se puede transformar en un Date ", e);
+					log.debug("The parameter:'" + parameterName
+						+ "' with value :'" + value
+						+ "' can not be transformed into one Date ", e);
 				}
 				
 				return defaultValue;
@@ -1435,18 +1519,6 @@ public abstract class MainServlet extends HttpServlet {
 	private void setLangId(HttpServletRequest request,String langId) {
 		Language language=I18NConnector.getLanguageFromLangId(langId,I18NConnector.getDefaultLanguage());
 		setLanguage(request,language);
-	}
-
-	private static void setThreadLocallanguage(HttpServletRequest request) {
-		// Lo guardamos en el thrad local del conector
-		List <Language>list=getLanguageFromHeader(request);
-		
-		Language newLanguaje=I18NConnector.getClosestLanguage(list);
-
-		HttpSession session=request.getSession();
-		SessionAccesor.setLanguage(session,newLanguaje);
-
-		I18NConnector.setThreadLocalLanguage(newLanguaje);
 	}
 
 	public String getUserInfoLine(HttpServletRequest request){
@@ -1681,9 +1753,9 @@ public abstract class MainServlet extends HttpServlet {
 				return Boolean.parseBoolean(value);
 			} catch (Exception e) {
 				if (log.isDebugEnabled()){
-					log.debug("El parametro:'" + parameterName
-							  + "' con valor :'" + value
-							  + "' no se puede transformar en un boolean ", e);
+					log.debug("The parameter:'" + parameterName
+							  + "' with value :'" + value
+							  + "' can not be transformed into one boolean ", e);
 				}
 				return defaultValue;
 			}
@@ -1705,9 +1777,9 @@ public abstract class MainServlet extends HttpServlet {
 				return new Double(value);
 			} catch (Exception e) {
 				if (log.isDebugEnabled()){
-					log.debug("El parametro:'" + parameterName
-							  + "' con valor :'" + value
-							  + "' no se puede transformar en un Double ", e);
+					log.debug("The parameter:'" + parameterName
+							  + "' with value :'" + value
+							  + "' can not be transformed into one Double ", e);
 				}
 				return defaultValue;
 			}
@@ -1722,9 +1794,9 @@ public abstract class MainServlet extends HttpServlet {
 		try {
 			return new Double(value);
 		} catch (Exception e) {
-			throw new ServletException("El parametro obligatorio:'" + parameterName
-									   + "' con valor :'" + value
-									   + "' no se puede transformar en un Double ", e);
+			throw new ServletException("The mandatory parameter:'" + parameterName
+									   + "' with value :'" + value
+									   + "' can not be transformed into one Double ", e);
 		}
 	}
 	
@@ -1816,5 +1888,43 @@ public abstract class MainServlet extends HttpServlet {
 		long timeToSleep=GlobalFileProperties.getIntValue(ServletSecurity.class, "RemoteHostMinSpetialCallTimeToSleep", 10000);
 
         return timeToSleep;
+    }
+
+    /**
+     * The threadlocal languaje
+     * @param request
+     */
+	private static void setThreadLocallanguage(HttpServletRequest request) {
+		// Lo guardamos en el thrad local del conector
+		List <Language>list=getLanguageFromHeader(request);
+		
+		Language newLanguaje=I18NConnector.getClosestLanguage(list);
+
+		HttpSession session=request.getSession();
+		SessionAccesor.setLanguage(session,newLanguaje);
+
+		I18NConnector.setThreadLocalLanguage(newLanguaje);
+	}
+	
+	/**
+	 * The ThreadLocal userId 
+	 */
+	private static ThreadLocal<String> threadLocalUserId=new ThreadLocal<String>();
+	
+    public static String getThreadLocaluserId(){
+    	String ret= threadLocalUserId.get();
+    	
+    	return ret;    	
+    }
+    
+    private static void setThreadLocaluserId(String userId){
+		log.warn("Setting threadlocal userId:"+Thread.currentThread().getName());
+		threadLocalUserId.set(userId);
+	}
+    
+    private static void removeThreadLocaluserId(){
+		log.warn("Removing the threadlocal userId:"+getThreadLocaluserId()+" for thread:"+Thread.currentThread().getName());
+		threadLocalUserId.set(null);
+    	
     }
 }

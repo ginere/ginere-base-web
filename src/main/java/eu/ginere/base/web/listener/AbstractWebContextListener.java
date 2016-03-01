@@ -98,13 +98,13 @@ public abstract class AbstractWebContextListener implements ServletContextListen
 
 	public void contextDestroyed(ServletContextEvent sce) {
 		String appName = sce.getServletContext().getContextPath();
-		Notify.warn(log,"Destrullendo el contexto de la plicacion:" + appName);
+		Notify.warn(log,"Destroying the context of the application:" + appName);
 		
 		// First destroy childs
 		try {
 			webContextDestroyed(sce,appName);
 		} catch (Exception e) {
-			Notify.fatal(log,"Mientras se destruia el contexto:'" + appName + "'", e);
+			Notify.fatal(log,"While destroying the context of the application:'" + appName + "'", e);
 		}
 		// Then nothing to do, here possible stuff
 	}
@@ -122,7 +122,7 @@ public abstract class AbstractWebContextListener implements ServletContextListen
 	public void contextInitialized(ServletContextEvent sce) {
 		String appName = sce.getServletContext().getContextPath();
 		log.warn("----------------------------------------------------");
-		Notify.warn(log,"Inicializando el contexto de la plicacion:" + appName);
+		Notify.warn(log,"Initializing the context of the application:" + appName);
 		
 		/*
 		 * Cogemos el contexto de la aplicacion a partir del context servlet
@@ -180,10 +180,10 @@ public abstract class AbstractWebContextListener implements ServletContextListen
 						
 		} catch (Exception e) {
 			if (!GlobalFileProperties.getBooleanValue(AbstractWebContextListener.class, "Installing", false)) {	
-				Notify.fatal(log,"Mientras se iniciaba el contexto:'" + appName + "'", e);
-				throw new RuntimeException("Mientras se iniciaba el contexto:'" + appName + "'", e);
+				Notify.fatal(log,"While initializing the context of the application:'" + appName + "'", e);
+				throw new RuntimeException("While initializing the context of the application:'" + appName + "'", e);
 			} else {
-				Notify.error(log,"Mientras se iniciaba el contexto:'" + appName + "'", e);				
+				Notify.error(log,"While initializing the context of the application:'" + appName + "'", e);				
 			}
 		}
 	}
@@ -203,9 +203,9 @@ public abstract class AbstractWebContextListener implements ServletContextListen
 		String filePath = context.getInitParameter(FILE_PATH_PROPERTIE_NAME);
 		
 		if (filePath == null || "".equals(filePath)) {
-			log.warn("la variable :'" + FILE_PATH_PROPERTIE_NAME+ "' no ha sido inicializada en el web.xml");
+			log.warn("The variable :'" + FILE_PATH_PROPERTIE_NAME+ "' has not been initialized int the web.xml");
 		} else {
-			log.info("Cargando el fichero de configuracion global en el path:'"+ filePath + "' definido en el web.xml.");
+			log.info("Loading the global configuration file in the path:'"+ filePath + "' defined in the web.xml.");
 			GlobalFileProperties.setInitFilePath(filePath);
 		}
 
@@ -243,8 +243,8 @@ public abstract class AbstractWebContextListener implements ServletContextListen
 			RightInterface applicationPermision[]=getInnerApplicationPermisions(appName);
 			RightConnector.subscriveApplicationRights(applicationPermision);
 		} catch (Exception e) {
-			throw new ContextInitializedException(" No se ha podido inicializar el contexto de la aplicacion."
-												  + " Error subscriviendo los permisos ",
+			throw new ContextInitializedException(" Could not initialize the application context."
+												  + " Error subscriving the rights ",
 												  e);
 
 		}

@@ -5,6 +5,7 @@ import javax.servlet.ServletContext;
 import org.apache.log4j.Logger;
 
 import eu.ginere.base.web.listener.ContextInitializedException;
+import eu.ginere.base.web.servlet.MainServlet;
 
 
 
@@ -53,6 +54,16 @@ public class RightConnector {
 	 */
 	public static boolean hasRight(String userId, RightInterface right) {
 		return hasRight(userId, right.getId());
+	}
+
+	public static boolean hasRight(RightInterface right) {
+		
+		String userId=MainServlet.getThreadLocaluserId();
+		if (userId!=null){
+			return hasRight(userId, right);
+		} else {
+			return false;
+		}
 	}
 	
 	/**

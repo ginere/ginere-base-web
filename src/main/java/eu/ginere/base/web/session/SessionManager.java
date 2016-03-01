@@ -183,7 +183,7 @@ public class SessionManager {
 
 		try {
 			// firs call the logout
-			UserSession.removeUser(getSession(sessionId));
+			UserSession.removeUser(getSession(sessionId,null));
 			
 			// we call listener defore destroy it
 			callDestroySessionListeners(session,sessionNumber);
@@ -214,16 +214,17 @@ public class SessionManager {
 	 * @param sessionNumber including hte new one created
 	 */
     private void callInitSessionListener(HttpSession session,long sessionNumber){
-    	// AbstractSession sessionInterface=storeSession(session); ...
-		AbstractSession sessionInterface=(AbstractSession)getSession(session.getId());
-
-		for (InitSessionListener listener:initSessionListenerList){
-			listener.init(session,sessionInterface,sessionNumber);
-		}
-//		for(Iterator i=initSessionListenerList.iterator();i.hasNext();){
-//			InitSessionListener listener=(InitSessionListener)i.next();
-//			listener.init(session,sessionNumber);
-//		}
+    	if (session!=null){
+	    	AbstractSession sessionInterface=(AbstractSession)getSession(session.getId(),null);
+	
+			if (sessionInterface!=null){
+				for (InitSessionListener listener:initSessionListenerList){
+					listener.init(session,sessionInterface,sessionNumber);
+				}
+			} else {
+				log.warn("No abstract session attached to the session:"+session.getId());
+			}
+    	}
     }
 
 	
@@ -233,16 +234,18 @@ public class SessionManager {
 	 * @param sessionNumber The session number including this one
 	 */
 	private void callDestroySessionListeners(HttpSession session,long sessionNumber){
-		AbstractSession sessionInterface=getSession(session.getId());
+    	if (session!=null){
+			AbstractSession sessionInterface=getSession(session.getId(),null);
+			
+			if (sessionInterface!=null){
+				for (DestroySessionListener listener:destroySessionListenerList){
+					listener.destroy(session,sessionInterface,sessionNumber);
+				}
+			} else {
+				log.warn("No abstract session attached to the session:"+session.getId());
+			}
+    	}
 		
-		for (DestroySessionListener listener:destroySessionListenerList){
-			listener.destroy(session,sessionInterface,sessionNumber);
-		}
-		
-//		for(Iterator i=destroySessionListenerList.iterator();i.hasNext();){
-//			DestroySessionListener listener=(DestroySessionListener)i.next();
-//			listener.destroy(session,sessionNumber);
-//		}
     }
 
 
@@ -346,21 +349,28 @@ public class SessionManager {
 		return new ArrayList<AbstractSession>(c);
 	}
 	
-	public AbstractSession getSession(HttpServletRequest request){
-		return getSession(request.getSession());
+	public AbstractSession getSession(HttpServletRequest request,AbstractSession defaultValue){
+		return getSession(request.getSession(false), defaultValue);
 	}
 
-	public AbstractSession getSession(HttpSession session){
-		return getSession(session.getId());
+	public AbstractSession getSession(HttpSession session,AbstractSession defaultValue){
+		if (session == null){
+			return defaultValue;
+		} else {
+			return getSession(session.getId(), defaultValue);
+		}
 	}
 
-	public AbstractSession getSession(String sessionId){
-		// TODO If th session manager is disabled disable that
-		return (AbstractSession)SESSION_HASH.get(sessionId);
+	public AbstractSession getSession(String sessionId,AbstractSession defaultValue){
+		if (enabled){
+			return (AbstractSession)SESSION_HASH.get(sessionId);
+		} else {
+			return defaultValue;
+		}
 	}
 
 	public void invalidate(String sessionId){
-		AbstractSession sessionInterface=getSession(sessionId);
+		AbstractSession sessionInterface=getSession(sessionId,null);
 		if (sessionInterface!=null && (sessionInterface instanceof AbstractSession) ){
 			((AbstractSession)sessionInterface).invalidate();
 		}
@@ -372,8 +382,12 @@ public class SessionManager {
 	}
 	
 	public String getTraceMessage(HttpSession session){		
-		AbstractSession sessionInterface=getSession(session);
-		return sessionInterface.getTraceMessage();
+		AbstractSession sessionInterface=getSession(session,null);
+		if (sessionInterface!=null){
+			return sessionInterface.getTraceMessage();
+		} else {
+			return "NO_SESSION_TRACE_MESSAGE";
+		}
 	}
 	
 //	/**
@@ -386,33 +400,41 @@ public class SessionManager {
 //		sessionInterface.trace();
 //	}
 
-	public String getUserAgentFamilly(HttpServletRequest request){
-		return getUserAgentFamilly(request.getSession());
+	public String getUserAgentFamilly(HttpServletRequest request,String defaultValue){
+		return getUserAgentFamilly(request.getSession(),defaultValue);
 	}
 	
-	public String getUserAgentFamilly(HttpSession session){
-		AbstractSession sessionInterface=getSession(session);
-		return sessionInterface.getUserAgentFamilly();
+	public String getUserAgentFamilly(HttpSession session,String defaultValue){
+		AbstractSession sessionInterface=getSession(session,null);
+		if (sessionInterface!=null){
+			return sessionInterface.getUserAgentFamilly();
+		} else {
+			return defaultValue;
+		}
 	}
 
 	public void notifyError(HttpServletRequest request, Exception e) {
-		AbstractSession si=getSession(request);
+		AbstractSession si=getSession(request,null);
 		
 		if (si!=null){
 			si.setError(e);
 			
 			RemoteHostSession.MANAGER.addError(si.getRemoteAddr(),e);
 		} else {
-			log.info("Security error not notified to SessionManager and to RemoteHostManager",e);
+			log.info("Security error not notified to SessionManager and to RemoteHostManager because no there is no current session.",e);
 		}
 	}
 
 	public void notifySpetialCall(HttpServletRequest request, String uri) {
-		AbstractSession si=getSession(request);
+		AbstractSession si=getSession(request,null);
 		
-		si.addSpetialCall(uri);
-		
-		RemoteHostSession.MANAGER.addSpetialCall(si.getRemoteAddr(),uri);
+		if (si!=null){
+			si.addSpetialCall(uri);
+			
+			RemoteHostSession.MANAGER.addSpetialCall(si.getRemoteAddr(),uri);
+		} else {
+			log.info("No spetial call nitified because no session URI:"+uri);
+		}
 		
 	}
 

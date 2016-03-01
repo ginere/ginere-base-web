@@ -108,7 +108,7 @@ public class SessionAccesor {
 		String userId=getUserId(session);
 		
 		if (userId!=null){
-			UserSession.removeUser(userId,SessionManager.MANAGER.getSession(session.getId()));
+			UserSession.removeUser(userId,SessionManager.MANAGER.getSession(session,null));
 			session.removeAttribute(LOGIN_SESSION_PARAMETER_NAME);
 			
 			setLastUpdated(session);
@@ -119,7 +119,7 @@ public class SessionAccesor {
 
 	public static void setUserId(HttpSession session,String userId) {
 		session.setAttribute(LOGIN_SESSION_PARAMETER_NAME, userId);
-		UserSession.setUser(userId,SessionManager.MANAGER.getSession(session.getId()));
+		UserSession.setUser(userId,SessionManager.MANAGER.getSession(session,null));
 		
 		setLastUpdated(session);
 	}

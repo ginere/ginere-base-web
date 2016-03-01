@@ -27,7 +27,7 @@ public class SessionListener implements HttpSessionListener {
 		HttpSession session=event.getSession();
 
 		log.debug("Listener Sesion IN:"+session.getId());
-		log.debug("Listener lang :"+SessionAccesor.getLanguage(session));
+//		log.debug("Listener lang :"+SessionAccesor.getLanguage(session));
 		
 	}
 
@@ -35,6 +35,6 @@ public class SessionListener implements HttpSessionListener {
 		HttpSession session=event.getSession();
 		
 		log.debug("Listener Sesion OUT:"+session.getId());
-		log.debug("Listener lang :"+SessionAccesor.getLanguage(session));		
+//		log.debug("Listener lang :"+SessionAccesor.getLanguage(session));		
 	}
 }

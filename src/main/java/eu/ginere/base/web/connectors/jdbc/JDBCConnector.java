@@ -41,7 +41,7 @@ public class JDBCConnector {
 						  + DATASOURCE_JNI_DEFAULTNAME + "'");
 				jniName = DATASOURCE_JNI_DEFAULTNAME;
 			} else {
-				log.info("Utilizando la source:'" + jniName + "'.");
+				log.info("Using the datasource:'" + jniName + "'.");
 			}
 				
 			try {
@@ -50,13 +50,13 @@ public class JDBCConnector {
 				
 				
 				if (!connector.testConnection()){
-					log.fatal("Cann't initialize connection to datasource:"+jniName);
+					log.fatal("Can NOT initialize connection to datasource:"+jniName);
 				} else {
 					log.info("Connection establiseh with datasource:"+jniName);
 				}
 				
 			} catch (Exception e) {
-				throw new ContextInitializedException("JDBCConnector, Mientras se inicializaba la fuente de datos:'" + jniName
+				throw new ContextInitializedException("JDBCConnector, While initializing the data source:'" + jniName
 													  + "'", e);
 			}
 			

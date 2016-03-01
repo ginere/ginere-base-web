@@ -10,9 +10,11 @@ import javax.servlet.http.HttpSession;
 import org.apache.log4j.Logger;
 
 import eu.ginere.base.util.properties.GlobalFileProperties;
+import eu.ginere.base.web.session.AbstractSession;
 import eu.ginere.base.web.session.RemoteHostSession;
 import eu.ginere.base.web.session.SessionAccesor;
 import eu.ginere.base.web.session.SessionManager;
+import eu.ginere.base.web.util.UserAgentManager;
 
 public class ServletSecurity {
 
@@ -25,6 +27,8 @@ public class ServletSecurity {
 	
 	private static boolean initialized=false;
 	
+	private static boolean enabled=GlobalFileProperties.getBooleanValue(ServletSecurity.class, "enableServletSecurity", false);
+	
 	public static void init(){
 //		privilegedRemoteClients=GlobalFileProperties.getPropertyMap(ServletSecurity.class, "PrivilegedRemoteClients");
 //		validRefered=GlobalFileProperties.getPropertyList(ServletSecurity.class, "ValidRefered");
@@ -32,8 +36,12 @@ public class ServletSecurity {
 		initialized=true;
 	}
 
-	public static boolean isInitialized(){
-		return initialized;
+//	public static boolean isInitialized(){
+//		return initialized;
+//	}
+	
+	public static boolean isEnabled(){
+		return enabled;
 	}
 	
 	static public void isFirstSessionCall(HttpServletRequest request,MainServlet servlet) throws ServletSecurityException{
@@ -92,30 +100,14 @@ public class ServletSecurity {
 		} else {
 			HttpSession session=request.getSession();
 			
-			testToManySessionSpetialCalls(session,servlet);
+			testToManySessionSpetialCalls(request,servlet);
 			
-			testToManyRemoteHostSpetialCalls(session,servlet);
+			testToManyRemoteHostSpetialCalls(request,servlet);
 		}
 	}
 	
-	private static void testToManySessionSpetialCalls(HttpSession session,MainServlet servlet) {
-		long time=SessionManager.MANAGER.getSession(session).getLastSpetialCallTime();
-//        int minErrorTime=GlobalFileProperties.getIntValue(ServletSecurity.class, "SessionMinSpetialCallLaps", 3000);
-//        long timeToSleep=GlobalFileProperties.getIntValue(ServletSecurity.class, "SessionMinSpetialCallTimeToSleep", 10000);
-        int minErrorTime=servlet.getTestToManySessionSpetialCallsLap();
-        long timeToSleep=servlet.getTestToManySessionSpetialCallsPunish();
-
-		if ( (System.currentTimeMillis()-time) <minErrorTime){
-			log.warn("ToManySessionSpetialCalls For session ID:"+session.getId()+", uri:'"+servlet.getUri()+"'. Sleeping:"+timeToSleep);
-			try {
-				Thread.sleep(timeToSleep);
-			} catch (InterruptedException e) {
-			}
-		}
-	}
-	
-	private static void testToManyRemoteHostSpetialCalls(HttpSession session,MainServlet servlet) {
-		String remoteAddress=SessionManager.MANAGER.getSession(session).getRemoteAddr();
+	private static void testToManyRemoteHostSpetialCalls(HttpServletRequest request,MainServlet servlet) {
+		String remoteAddress=getRemoteAddr(request);
 		long time=RemoteHostSession.MANAGER.getLastSpetialCallTime(remoteAddress);
 //		int minErrorTime=GlobalFileProperties.getIntValue(ServletSecurity.class, "RemoteHostMinSpetialCallLaps", 5000);
 //		long timeToSleep=GlobalFileProperties.getIntValue(ServletSecurity.class, "RemoteHostMinSpetialCallTimeToSleep", 10000);
@@ -142,21 +134,61 @@ public class ServletSecurity {
 		if (isPrivilegedRemoteClient(request,servlet)){
 			return ;
 		} else {
-			HttpSession session=request.getSession();
+//			HttpSession session=request.getSession();
 			
-			testToManySessionErrors(session,servlet);
+			testToManySessionErrors(request,servlet);
 			
-			testToManyRemoteHostErrors(session,servlet);
+			testToManyRemoteHostErrors(request,servlet);
+		}
+	}
+	
+	
+	private static void testToManySessionSpetialCalls(HttpServletRequest request,MainServlet servlet) {
+        int minErrorTime=servlet.getTestToManySessionSpetialCallsLap();
+        long timeToSleep=servlet.getTestToManySessionSpetialCallsPunish();
+
+        AbstractSession ab=SessionManager.MANAGER.getSession(request,null);
+		
+		long time;
+		String sessionId;
+		if (ab != null){
+			time=ab.getLastSpetialCallTime();
+			sessionId=ab.getId();
+		} else {
+			sessionId=null;
+			log.warn("No session that means that whe sleep in the to many session error check, uri:'"+servlet.getUri()+"'. Sleeping:"+timeToSleep);
+			time=System.currentTimeMillis();
+		}
+		
+		if ( (System.currentTimeMillis()-time) <minErrorTime){
+			log.warn("ToManySessionSpetialCalls For session ID:"+sessionId+", uri:'"+servlet.getUri()+"'. Sleeping:"+timeToSleep);
+			try {
+				Thread.sleep(timeToSleep);
+			} catch (InterruptedException e) {
+			}
 		}
 	}
 
-	private static void testToManySessionErrors(HttpSession session,MainServlet servlet) {
-		long time=SessionManager.MANAGER.getSession(session).getLastErrorTime();
+	private static void testToManySessionErrors(HttpServletRequest request,MainServlet servlet) {
+		
+		AbstractSession ab=SessionManager.MANAGER.getSession(request,null);
+		
 		int minErrorTime=GlobalFileProperties.getIntValue(ServletSecurity.class, "SessionMinErrorTimeLaps", 1000);
 		long timeToSleep=GlobalFileProperties.getIntValue(ServletSecurity.class, "SessionMinErrorTimeTimeToSleep", 2000);
+		long time;
+		String sessionId;
+		
+		if (ab!=null){
+			sessionId=ab.getId();
+			time=ab.getLastErrorTime();
+		} else {
+			sessionId=null;
+			log.warn("No session that means that whe sleep in the to many session error check, uri:'"+servlet.getUri()+"'. Sleeping:"+timeToSleep);
+			time=System.currentTimeMillis();
+		}
 		
 		if ( (System.currentTimeMillis()-time) <minErrorTime){
-			log.warn("ToManySessionError For session ID:"+session.getId()+", uri:'"+servlet.getUri()+"'. Sleeping:"+timeToSleep);
+			log.warn("ToManySessionError For session ID:"+sessionId+", uri:'"+servlet.getUri()+"'. Sleeping:"+timeToSleep);
 			try {
 				Thread.sleep(timeToSleep);
 			} catch (InterruptedException e) {
@@ -164,8 +196,8 @@ public class ServletSecurity {
 		}
 	}
 	
-	private static void testToManyRemoteHostErrors(HttpSession session,MainServlet servlet) {
-		String remoteAddress=SessionManager.MANAGER.getSession(session).getRemoteAddr();
+	private static void testToManyRemoteHostErrors(HttpServletRequest request,MainServlet servlet) {
+		String remoteAddress=getRemoteAddr(request);
 		long time=RemoteHostSession.MANAGER.getLastErrorTime(remoteAddress);
 		int minErrorTime=GlobalFileProperties.getIntValue(ServletSecurity.class, "RemoteHostMinErrorTimeLaps", 1000);
 		long timeToSleep=GlobalFileProperties.getIntValue(ServletSecurity.class, "RemoteHostMinErrorTimeTimeToSleep", 2000);
@@ -228,9 +260,42 @@ public class ServletSecurity {
 
 	public static void noRobots(HttpServletRequest request,
 			MainServlet mainServlet) throws ServletSecurityException{
-		if (SessionManager.MANAGER.getSession(request).isRobot()){
-			throw ServletSecurityException.create("No Robots allowed agent:'"+SessionManager.MANAGER.getSession(request).getUserAgent()+"'", request, mainServlet);
-		}
-		
+		if (isRobot(request)){
+			throw ServletSecurityException.create("No Robots allowed agent:'"+getUserAgent(request)+"'", request, mainServlet);
+		}		
 	}
+
+	public static boolean isRobot(HttpServletRequest request){
+		AbstractSession as=SessionManager.MANAGER.getSession(request,null);
+		
+		if (as!=null){
+			return as.isRobot();
+		} else {
+			String userAgent=getUserAgent(request);
+	
+			return UserAgentManager.isRobot(userAgent);
+		}
+	}
+	
+	
+	public static String getRemoteAddr(HttpServletRequest request){
+		AbstractSession as=SessionManager.MANAGER.getSession(request,null);
+		
+		if (as==null){			
+			return MainServlet.getRemoteAddress(request);
+		} else {
+			return as.getRemoteAddr();
+		}
+
+	}
+	public static String getUserAgent(HttpServletRequest request){
+		AbstractSession as=SessionManager.MANAGER.getSession(request,null);
+		
+		if (as==null){
+			return MainServlet.getUserAgent(request);
+		} else {
+			return as.getUserAgent();
+		}		
+	}
+	
 }
