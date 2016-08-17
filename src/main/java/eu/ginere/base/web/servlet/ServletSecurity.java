@@ -14,7 +14,6 @@ import eu.ginere.base.web.session.AbstractSession;
 import eu.ginere.base.web.session.RemoteHostSession;
 import eu.ginere.base.web.session.SessionAccesor;
 import eu.ginere.base.web.session.SessionManager;
-import eu.ginere.base.web.util.UserAgentManager;
 
 public class ServletSecurity {
 
@@ -27,12 +26,12 @@ public class ServletSecurity {
 	
 	private static boolean initialized=false;
 	
-	private static boolean enabled=GlobalFileProperties.getBooleanValue(ServletSecurity.class, "enableServletSecurity", false);
+	private static boolean enabled=GlobalFileProperties.getBooleanValue(ServletSecurity.class, "enableServletSecurity","This enable the servlet security", false);
 	
 	public static void init(){
 //		privilegedRemoteClients=GlobalFileProperties.getPropertyMap(ServletSecurity.class, "PrivilegedRemoteClients");
 //		validRefered=GlobalFileProperties.getPropertyList(ServletSecurity.class, "ValidRefered");
-		CAPCHA_URL=GlobalFileProperties.getStringValue(ServletSecurity.class, "Captcha","http://en.wikipedia.org/wiki/CAPTCHA");
+		CAPCHA_URL=GlobalFileProperties.getStringValue(ServletSecurity.class, "Captcha","The capcha url to use","http://en.wikipedia.org/wiki/CAPTCHA");
 		initialized=true;
 	}
 
@@ -61,7 +60,7 @@ public class ServletSecurity {
 	
 	static public void testReferer(HttpServletRequest request,MainServlet servlet)throws ServletSecurityException{	
 		
-		String validRefered[]=GlobalFileProperties.getPropertyList(ServletSecurity.class, "ValidRefered");
+		String validRefered[]=GlobalFileProperties.getPropertyList(ServletSecurity.class, "ValidRefered","The valid referer");
 		
 		String referer=request.getHeader("referer");
 
@@ -173,8 +172,8 @@ public class ServletSecurity {
 		
 		AbstractSession ab=SessionManager.MANAGER.getSession(request,null);
 		
-		int minErrorTime=GlobalFileProperties.getIntValue(ServletSecurity.class, "SessionMinErrorTimeLaps", 1000);
-		long timeToSleep=GlobalFileProperties.getIntValue(ServletSecurity.class, "SessionMinErrorTimeTimeToSleep", 2000);
+		int minErrorTime=GlobalFileProperties.getIntValue(ServletSecurity.class, "SessionMinErrorTimeLaps","SessionMinErrorTimeLaps", 1000);
+		long timeToSleep=GlobalFileProperties.getIntValue(ServletSecurity.class, "SessionMinErrorTimeTimeToSleep","SessionMinErrorTimeTimeToSleep", 2000);
 		long time;
 		String sessionId;
 		
@@ -199,8 +198,8 @@ public class ServletSecurity {
 	private static void testToManyRemoteHostErrors(HttpServletRequest request,MainServlet servlet) {
 		String remoteAddress=getRemoteAddr(request);
 		long time=RemoteHostSession.MANAGER.getLastErrorTime(remoteAddress);
-		int minErrorTime=GlobalFileProperties.getIntValue(ServletSecurity.class, "RemoteHostMinErrorTimeLaps", 1000);
-		long timeToSleep=GlobalFileProperties.getIntValue(ServletSecurity.class, "RemoteHostMinErrorTimeTimeToSleep", 2000);
+		int minErrorTime=GlobalFileProperties.getIntValue(ServletSecurity.class, "RemoteHostMinErrorTimeLaps", "RemoteHostMinErrorTimeLaps",1000);
+		long timeToSleep=GlobalFileProperties.getIntValue(ServletSecurity.class, "RemoteHostMinErrorTimeTimeToSleep", "RemoteHostMinErrorTimeTimeToSleep",2000);
 		
 		if ( (System.currentTimeMillis()-time) <minErrorTime){
 			log.warn("ToManySessionError For remoteHost ID:"+remoteAddress+", uri:'"+servlet.getUri()+"'. Sleeping:"+timeToSleep);
@@ -213,7 +212,7 @@ public class ServletSecurity {
 
 
 	static public boolean isPrivilegedRemoteClient(HttpServletRequest request,MainServlet servlet){
-		HashSet<String> privilegedRemoteClients=GlobalFileProperties.getPropertyMap(ServletSecurity.class, "PrivilegedRemoteClients");
+		HashSet<String> privilegedRemoteClients=GlobalFileProperties.getPropertyMap(ServletSecurity.class, "PrivilegedRemoteClients","PrivilegedRemoteClients");
 		
 		String remoteAddress=request.getRemoteAddr();
 		if (privilegedRemoteClients.contains(remoteAddress)){
@@ -258,24 +257,24 @@ public class ServletSecurity {
 		// TODO
 	}
 
-	public static void noRobots(HttpServletRequest request,
-			MainServlet mainServlet) throws ServletSecurityException{
-		if (isRobot(request)){
-			throw ServletSecurityException.create("No Robots allowed agent:'"+getUserAgent(request)+"'", request, mainServlet);
-		}		
-	}
-
-	public static boolean isRobot(HttpServletRequest request){
-		AbstractSession as=SessionManager.MANAGER.getSession(request,null);
-		
-		if (as!=null){
-			return as.isRobot();
-		} else {
-			String userAgent=getUserAgent(request);
-	
-			return UserAgentManager.isRobot(userAgent);
-		}
-	}
+//	public static void noRobots(HttpServletRequest request,
+//			MainServlet mainServlet) throws ServletSecurityException{
+//		if (isRobot(request)){
+//			throw ServletSecurityException.create("No Robots allowed agent:'"+getUserAgent(request)+"'", request, mainServlet);
+//		}		
+//	}
+//
+//	public static boolean isRobot(HttpServletRequest request){
+//		AbstractSession as=SessionManager.MANAGER.getSession(request,null);
+//		
+//		if (as!=null){
+//			return as.isRobot();
+//		} else {
+//			String userAgent=getUserAgent(request);
+//	
+//			return UserAgentManager.isRobot(userAgent);
+//		}
+//	}
 	
 	
 	public static String getRemoteAddr(HttpServletRequest request){

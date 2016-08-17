@@ -46,14 +46,14 @@ public abstract class Jsp extends MainServlet {
 		return MainServlet.PUBLIC_ACCESS;
 	}
 	
-	protected String getUri(){
+	public String getUri(){
 		return null;
 	}
 	
-	protected String getDescription(){
+	public String getDescription(){
 		return null;
 	}
-	protected ServletArgs[] getArgs(){
+	public ServletArgs[] getArgs(){
 		return null;
 	}
 }

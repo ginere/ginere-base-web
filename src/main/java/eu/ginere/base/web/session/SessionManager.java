@@ -50,7 +50,7 @@ public class SessionManager {
 	// private static final Vector SESSION_LIST=new Vector();
 	private final Map<String,AbstractSession> SESSION_HASH=new Hashtable<String,AbstractSession>();
 	
-	private boolean enabled=GlobalFileProperties.getBooleanValue(SessionManager.class, "enableSessionManager", false);
+	private boolean enabled=GlobalFileProperties.getBooleanValue(SessionManager.class, "enableSessionManager","enableSessionManager", false);
 //	private boolean enabled=false;
 	
 	private SessionManager(){
@@ -142,7 +142,7 @@ public class SessionManager {
 		// en la raiz del servidor.
 		// El UUID ya esta almacenado en sesion porque es una de las priemras cosas que se hacen al iniciar la session
 		Login.loginAndLogoutByCookie(request,response);
-		session.setMaxInactiveInterval(GlobalFileProperties.getIntValue(SessionManager.class, "MaxInactiveIntervalInSeconds", DEFAULT_SESSION_EXPIRATION_TIME_IN_SECONDS));
+		session.setMaxInactiveInterval(GlobalFileProperties.getIntValue(SessionManager.class, "MaxInactiveIntervalInSeconds", "MaxInactiveIntervalInSeconds",DEFAULT_SESSION_EXPIRATION_TIME_IN_SECONDS));
 		// will remove this ???, no we can use it to trace session
 //		updateSession(session,request);		
 	}

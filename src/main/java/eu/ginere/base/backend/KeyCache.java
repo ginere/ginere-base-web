@@ -26,7 +26,7 @@ public class KeyCache extends MainServlet {
 	
 
 	@Override
-	protected ServletArgs[] getArgs() {
+	public ServletArgs[] getArgs() {
 		return ServletArgs.NO_ARGS;
 	}
 
@@ -80,16 +80,12 @@ public class KeyCache extends MainServlet {
 	}
 	
 	@Override
-	protected String getUri() {
+	public String getUri() {
 		return URI;
 	}
 
 	@Override
-	protected String getDescription() {
+	public String getDescription() {
 		return DESCRIPTION;
 	}
-
-
-
-
 }

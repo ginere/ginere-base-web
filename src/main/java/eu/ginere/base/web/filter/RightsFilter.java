@@ -40,7 +40,7 @@ public class RightsFilter implements Filter {
 		log.debug(request.getRequestURI());
 		log.debug(request.getRequestURL());
 		
-		String permisions[]=GlobalFileProperties.getPropertyList(RightsFilter.class, RIGHT_PROPERTY_PREFIX+uri);
+		String permisions[]=GlobalFileProperties.getPropertyList(RightsFilter.class, RIGHT_PROPERTY_PREFIX+uri,"Right properties to use in the filter of the url, prefix:"+RIGHT_PROPERTY_PREFIX);
 		String userId=MainServlet.getUserId(request);
 		boolean hasPermision=false;
 

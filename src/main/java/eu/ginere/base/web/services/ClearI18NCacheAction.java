@@ -8,7 +8,6 @@ import eu.ginere.base.web.connectors.i18n.I18NConnector;
 import eu.ginere.base.web.connectors.rights.RightInterface;
 import eu.ginere.base.web.listener.AbstractWebContextListener;
 import eu.ginere.base.web.listener.ContextInitializedException;
-import eu.ginere.base.web.menu.MenuManager;
 import eu.ginere.base.web.servlet.ActionServlet;
 import eu.ginere.base.web.servlet.info.ServletArgs;
 
@@ -21,7 +20,7 @@ public class ClearI18NCacheAction extends ActionServlet {
 	
 
 	@Override
-	protected ServletArgs[] getArgs() {
+	public ServletArgs[] getArgs() {
 		return ServletArgs.NO_ARGS;
 	}
 	
@@ -30,7 +29,7 @@ public class ClearI18NCacheAction extends ActionServlet {
 							 HttpServletResponse response) throws ServletException {
 		
 		I18NConnector.clearCache();
-		MenuManager.clearI18NCache();
+//		MenuManager.clearI18NCache();
 	}
 
 	
@@ -42,12 +41,12 @@ public class ClearI18NCacheAction extends ActionServlet {
 	}
 	
 	@Override
-	protected String getUri() {
+	public String getUri() {
 		return URI;
 	}
 
 	@Override
-	protected String getDescription() {
+	public String getDescription() {
 		return DESCRIPTION;
 	}
 

@@ -18,7 +18,6 @@ import eu.ginere.base.util.i18n.Language;
 import eu.ginere.base.util.notification.Notify;
 import eu.ginere.base.web.servlet.MainServlet;
 import eu.ginere.base.web.util.CookieUtils;
-import eu.ginere.base.web.util.UserAgentManager;
 
 
 /**
@@ -84,8 +83,8 @@ public class AbstractSession /* implements SessionInterface */ {
 		lastArgs=request.getQueryString();
 //		language=MainServlet.getLanguage(request);
 
-		isRobot=UserAgentManager.isRobot(userAgent);
-		userAgentFamilly=UserAgentManager.getUserAgentFamilly(userAgent);
+//		isRobot=UserAgentManager.isRobot(userAgent);
+//		userAgentFamilly=UserAgentManager.getUserAgentFamilly(userAgent);
 
 		if (isRobot){
 			session.setMaxInactiveInterval(ROBOT_MAX_INTERVAL);

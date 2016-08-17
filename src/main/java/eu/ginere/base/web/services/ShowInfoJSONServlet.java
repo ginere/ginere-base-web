@@ -19,7 +19,6 @@ import eu.ginere.base.web.listener.ContextInitializedException;
 import eu.ginere.base.web.servlet.JSONServlet;
 import eu.ginere.base.web.servlet.MainServlet;
 import eu.ginere.base.web.servlet.info.ServletArgs;
-import eu.ginere.base.web.servlet.info.ServletInfo;
 
 
 public class ShowInfoJSONServlet extends JSONServlet{

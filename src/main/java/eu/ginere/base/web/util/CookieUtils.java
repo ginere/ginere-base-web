@@ -24,10 +24,10 @@ import eu.ginere.base.web.session.SessionAccesor;
  * @version $Revision: 1.2 $
  */
 public class CookieUtils {
-	public static final Logger log = Logger.getLogger(UserAgentManager.class);
+	public static final Logger log = Logger.getLogger(CookieUtils.class);
 	
-	private static final String COOKIE_UUID_NAME=GlobalFileProperties.getStringValue(CookieUtils.class, "UUIDCookieName","UUID");
-	private static final String COOKIE_LOGIN_NAME=GlobalFileProperties.getStringValue(CookieUtils.class, "LoginCookieName","Login");
+	private static final String COOKIE_UUID_NAME=GlobalFileProperties.getStringValue(CookieUtils.class, "UUIDCookieName","UUIDCookieName","UUID");
+	private static final String COOKIE_LOGIN_NAME=GlobalFileProperties.getStringValue(CookieUtils.class, "LoginCookieName","LoginCookieName","Login");
 	private static final int COOKIE_MAX_AGE=Integer.MAX_VALUE; // 24*60*60*1000; // time in seconds
 
 	public static void storeUserLoginCookie(HttpServletRequest request,

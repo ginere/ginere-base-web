@@ -179,7 +179,7 @@ public abstract class AbstractWebContextListener implements ServletContextListen
 			log.warn("----------------------------------------------------");
 						
 		} catch (Exception e) {
-			if (!GlobalFileProperties.getBooleanValue(AbstractWebContextListener.class, "Installing", false)) {	
+			if (!GlobalFileProperties.getBooleanValue(AbstractWebContextListener.class, "Installing", "Stop if exception on initialization",false)) {	
 				Notify.fatal(log,"While initializing the context of the application:'" + appName + "'", e);
 				throw new RuntimeException("While initializing the context of the application:'" + appName + "'", e);
 			} else {
@@ -206,7 +206,9 @@ public abstract class AbstractWebContextListener implements ServletContextListen
 			log.warn("The variable :'" + FILE_PATH_PROPERTIE_NAME+ "' has not been initialized int the web.xml");
 		} else {
 			log.info("Loading the global configuration file in the path:'"+ filePath + "' defined in the web.xml.");
-			GlobalFileProperties.setInitFilePath(filePath);
+			if (!GlobalFileProperties.setInitFilePath(filePath)){
+				throw new ContextInitializedException("Properties file not initilized width path:"+filePath);
+			}
 		}
 
 	}

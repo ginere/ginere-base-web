@@ -40,7 +40,7 @@ public abstract class JSONServlet extends MainServlet {
 	public static final String CONTENT_TYPE_JSON = "application/json"; // application/json  // text/javascript
 	public static final String CONTENT_TYPE_JAVASCRIPT = "text/javascript"; // application/json  // text/javascript
 
-	public static final String JSONP_PARAMETER=GlobalFileProperties.getStringValue(JSONServlet.class, "JSONP_PARAMETER",null);
+	public static final String JSONP_PARAMETER=GlobalFileProperties.getStringValue(JSONServlet.class, "JSONP_PARAMETER","The property name that will be used in JSONP calls",null);
 
 
 	/**
@@ -88,7 +88,7 @@ public abstract class JSONServlet extends MainServlet {
 		gsonBuilder.registerTypeAdapter(FileId.class, new FileIdSerializer());
 		gsonBuilder.registerTypeAdapter(I18NLabel.class, new I18NLabelSerializer());
 		
-		if (GlobalFileProperties.getBooleanValue(JSONServlet.class, "SetPrettyPrinting", false)){
+		if (GlobalFileProperties.getBooleanValue(JSONServlet.class, "SetPrettyPrinting","If true this preatyprenting the json of the services", false)){
 			gsonBuilder.setPrettyPrinting();
 		}
 		

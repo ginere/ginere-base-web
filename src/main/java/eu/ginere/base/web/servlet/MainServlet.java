@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -17,6 +16,7 @@ import java.util.Map;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
+import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -27,6 +27,7 @@ import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.log4j.Logger;
 
 import eu.ginere.base.util.dao.DaoManagerException;
@@ -44,7 +45,6 @@ import eu.ginere.base.web.connectors.users.UsersConnector;
 import eu.ginere.base.web.listener.AbstractWebContextListener;
 import eu.ginere.base.web.listener.ContextInitializedException;
 import eu.ginere.base.web.servlet.info.ServletArgs;
-import eu.ginere.base.web.servlet.info.ServletInfo;
 import eu.ginere.base.web.session.SessionAccesor;
 import eu.ginere.base.web.session.SessionManager;
 
@@ -120,6 +120,7 @@ public abstract class MainServlet extends HttpServlet {
 	 * @return
 	 * @throws ContextInitializedException
 	 */
+	// TODO REMOVE ContextInitializedException
 	abstract protected RightInterface[] getRights()throws ContextInitializedException;
 
 	public void destroy() {
@@ -153,7 +154,8 @@ public abstract class MainServlet extends HttpServlet {
 	 * Los derechos de acceso al servlet
 	 */
 	private RightInterface[] SERVLET_RIGHTS=null;
-	private final ServletInfo servletInfo=new ServletInfo(getClass());
+//	private final ServletInfo servletInfo=new ServletInfo(getClass());
+	private final ServletInfo servletInfo=new ServletInfo(this);
 	protected String servletReturn=null;
 
 //	private HashSet<String> privilegedRemoteClients;
@@ -206,9 +208,9 @@ public abstract class MainServlet extends HttpServlet {
 	public String getServletReturn(){
 		return servletReturn;
 	}
-	public RightInterface[] getServletRights(){
-		return SERVLET_RIGHTS;
-	}
+//	public RightInterface[] getServletRights(){
+//		return SERVLET_RIGHTS;
+//	}
 
 	protected static final String METHOD_GET = "GET";
 	protected static final String METHOD_OPTIONS = "OPTIONS";
@@ -415,7 +417,7 @@ public abstract class MainServlet extends HttpServlet {
 					// Para servlet speciales
 					if (enableSpetialSecurity()){
 						// Aqui no aceptamos robots
-						ServletSecurity.noRobots(request, this);
+//						ServletSecurity.noRobots(request, this);
 						
 						// no se pueden hacer demasiadas llamadas 
 						// TODO por el moment osolo lo ralentizamos
@@ -480,6 +482,14 @@ public abstract class MainServlet extends HttpServlet {
 										String value=request.getHeader(name);
 										log.debug("Header ["+name+"]='"+value+"'");
 									}
+									
+									names=request.getParameterNames();
+									while(names.hasMoreElements()){
+										String name =  names.nextElement();
+										String value=request.getParameter(name);
+										log.debug("Parameter ["+name+"]='"+value+"'");
+									}
+									
 								}
 	//							long lastModifiedRounded=(lastModified / 1000 * 1000);
 	//							if (ifModifiedSince <  lastModifiedRounded) {
@@ -656,7 +666,9 @@ public abstract class MainServlet extends HttpServlet {
 				// testing the local access right
 				for (int i = 0; i < permisions.length; i++) {
 					if (LOCAL_ACCESS_RIGHT.getId().equals(permisions[i].getId())){
-						return true;
+						if (isLocalAccess(request)){
+							return true;
+						}
 					}
 				}
 				return false;
@@ -665,13 +677,16 @@ public abstract class MainServlet extends HttpServlet {
 					
 					RightInterface permision=permisions[i];
 					if (LOCAL_ACCESS_RIGHT.getId().equals(permision.getId())){
-						String remoteHost=getRemoteAddress(request);
-						if (StringUtils.equalsIgnoreCase(LOCAL_HOST, remoteHost)){
-							if (log.isInfoEnabled()){
-								log.info("The url:" + uri + " accept localhost access");
-							}
+						if (isLocalAccess(request)){
 							return true;
-						}
+						} 
+//						String remoteHost=getRemoteAddress(request);
+//						if (StringUtils.equalsIgnoreCase(LOCAL_HOST, remoteHost)){
+//							if (log.isInfoEnabled()){
+//								log.info("The url:" + uri + " accept localhost access");
+//							}
+//							return true;
+//						}
 					} else if (RightConnector.hasRight(userId, permision)) {
 						// si el usuario tiene alguno de los permisos, entra
 						if (log.isInfoEnabled()){
@@ -1633,6 +1648,36 @@ public abstract class MainServlet extends HttpServlet {
 		return getUserId(request)!=null;
 	} 
 
+	public static String getReferer(HttpServletRequest request, String defaultValue) {
+		String ret=request.getHeader("referer");
+		
+		if (StringUtils.isEmpty(ret)){
+			return defaultValue;
+		} else {
+			return ret;
+		}
+	}
+	
+	public static String getUserAgent(HttpServletRequest request,String defaultValue) {
+		String ret=request.getHeader("user-agent");
+		
+		if (StringUtils.isEmpty(ret)){
+			return defaultValue;
+		} else {
+			return ret;
+		}
+	}
+	
+	public static String getRemoteAddress(HttpServletRequest request,String defaultValue) {
+		String ret=request.getRemoteAddr();
+		
+		if (StringUtils.isEmpty(ret)){
+			return defaultValue;
+		} else {
+			return ret;
+		}
+	}
+	
 	public static String getRemoteAddress(HttpServletRequest request) {
 		String ret=request.getRemoteAddr();
 		
@@ -1642,7 +1687,7 @@ public abstract class MainServlet extends HttpServlet {
 			return NOT_REMOTE_ADDR_FOUND;
 		}
 	}
-
+	
 	public static String getUserAgent(HttpServletRequest request) {
 		String ret=request.getHeader("user-agent");
 		
@@ -1860,7 +1905,7 @@ public abstract class MainServlet extends HttpServlet {
      * Overwrite that function if you want spetial times for servlets
      */
     public int getTestToManySessionSpetialCallsLap(){
-        int minErrorTime=GlobalFileProperties.getIntValue(ServletSecurity.class, "SessionMinSpetialCallLaps", 3000);
+        int minErrorTime=GlobalFileProperties.getIntValue(ServletSecurity.class, "SessionMinSpetialCallLaps", "SessionMinSpetialCallLaps", 3000);
 
         return minErrorTime;        
     }
@@ -1869,7 +1914,7 @@ public abstract class MainServlet extends HttpServlet {
      * Overwrite that function if you want spetial times for servlets
      */
     public long getTestToManySessionSpetialCallsPunish(){
-		long timeToSleep=GlobalFileProperties.getIntValue(ServletSecurity.class, "SessionMinSpetialCallTimeToSleep", 10000);
+		long timeToSleep=GlobalFileProperties.getIntValue(ServletSecurity.class, "SessionMinSpetialCallTimeToSleep", "SessionMinSpetialCallTimeToSleep",10000);
 
         return timeToSleep;        
     }
@@ -1879,13 +1924,13 @@ public abstract class MainServlet extends HttpServlet {
      * Overwrite that function if you want spetial times for servlets
      */
     public int getTestToManyRemoteHostSpetialCallsLap(){
-		int minErrorTime=GlobalFileProperties.getIntValue(ServletSecurity.class, "RemoteHostMinSpetialCallLaps", 5000);
+		int minErrorTime=GlobalFileProperties.getIntValue(ServletSecurity.class, "RemoteHostMinSpetialCallLaps", "RemoteHostMinSpetialCallLaps",5000);
 
         return minErrorTime;
     }
 
     public long getTestToManyRemoteHostSpetialCallsPunish(){
-		long timeToSleep=GlobalFileProperties.getIntValue(ServletSecurity.class, "RemoteHostMinSpetialCallTimeToSleep", 10000);
+		long timeToSleep=GlobalFileProperties.getIntValue(ServletSecurity.class, "RemoteHostMinSpetialCallTimeToSleep", "RemoteHostMinSpetialCallTimeToSleep",10000);
 
         return timeToSleep;
     }
@@ -1918,13 +1963,197 @@ public abstract class MainServlet extends HttpServlet {
     }
     
     private static void setThreadLocaluserId(String userId){
-		log.warn("Setting threadlocal userId:"+Thread.currentThread().getName());
+    	if (log.isInfoEnabled()){
+    		log.info("Setting threadlocal userId:"+userId+" for thread:"+Thread.currentThread().getName());
+    	}
 		threadLocalUserId.set(userId);
 	}
     
     private static void removeThreadLocaluserId(){
-		log.warn("Removing the threadlocal userId:"+getThreadLocaluserId()+" for thread:"+Thread.currentThread().getName());
+    	if (log.isInfoEnabled()){
+    		log.info("Removing the threadlocal userId:"+getThreadLocaluserId()+" for thread:"+Thread.currentThread().getName());
+    	}
 		threadLocalUserId.set(null);
     	
     }
+    
+    
+    public class ServletInfo {
+//    	private final Class<? extends MainServlet> clazz;
+    	
+    	public final String name;
+    	
+    	private long totalNumber=0;
+    	private long totalTime=0;
+    	private long maxTime=0;
+    	
+    	private long runningCall=0;
+    	
+    	private long exceptionNumber=0;
+    	private Exception lastException=null;
+
+    	private String description;
+
+    	private String url;
+
+    	private String rightDescription;
+
+		private String info;
+
+//    	private String uri;
+    //
+//    	private String description;
+    //
+//    	private ServletArgs[] args;
+
+//    	public ServletInfo(Class<? extends MainServlet> clazz){
+    	public ServletInfo(MainServlet servlet){
+    		Class<? extends MainServlet> clazz=servlet.getClass();
+//    		this.clazz=clazz;
+    		this.name=clazz.getName();
+    		
+    		WebServlet ws=(WebServlet)clazz.getAnnotation(WebServlet.class);
+
+    		if (ws != null){
+    			this.description="";
+    			this.description+="Name: "+ws.name();
+    			this.description+="Displayname: "+ws.displayName();
+    			this.description+="Description: "+ws.description();
+    			this.description+="AsyncSupported: "+ws.asyncSupported();
+
+    			this.url=StringUtils.join(ws.value());
+    		} else {
+    			this.url=servlet.getUri();
+    			this.description=servlet.getDescription();			
+//    			protected abstract ServletArgs[] getArgs(); 
+
+    		}	
+
+    		try {
+	    		RightInterface[] rights=servlet.getRights();
+	
+	    		if (rights == null){
+	    			this.rightDescription="Public access";
+	    		} else if (rights.length == 0){
+	    			this.rightDescription="User logged";
+	    		} else {
+	    			this.rightDescription=null;
+	    			for (RightInterface right:rights){
+	    				if (this.rightDescription == null){
+	    					this.rightDescription=right.getName();
+	    				} else {
+	    					this.rightDescription+=","+right.getName();
+	    				}
+	    			}
+	    		}
+    		}catch(ContextInitializedException e){
+    			log.error("",e);
+    		}
+    	}
+
+    	public synchronized void startCall() {
+    		this.runningCall++;	
+    	}
+    	
+    	public synchronized void clear(){
+    		this.totalNumber=0;
+    		this.totalTime=0;
+    		this.maxTime=0;
+    		this.lastException=null;
+    		this.exceptionNumber=0;
+    		this.runningCall=0;
+    	}
+    	
+    	public synchronized void addLaps(long laps){
+    		this.totalNumber++;
+    		this.totalTime+=laps;
+    		this.runningCall--;	
+    		if(laps>maxTime){
+    			this.maxTime=laps;
+    		}
+    	}
+
+    	public synchronized void addException(HttpServletRequest request,Exception e){
+    		this.lastException=e;
+    		this.exceptionNumber++;
+
+    		SessionManager.MANAGER.notifyError(request,e);
+    	}
+    	
+    	public synchronized void addSecurityError(HttpServletRequest request,ServletSecurityException e){
+    		this.lastException=e;
+    		this.exceptionNumber++;
+
+    		SessionManager.MANAGER.notifyError(request,e);
+    	}
+//    	public Class<? extends MainServlet> getServletClass() {
+//    		return clazz;
+//    	}
+
+    	public long getTotalNumber() {
+    		return totalNumber;
+    	}
+
+    	public long getTotalTime() {
+    		return totalTime;
+    	}
+
+    	public long getMaxTime() {
+    		return maxTime;
+    	}
+
+    	public long getExceptionNumber() {
+    		return exceptionNumber;
+    	}
+
+    	public long getAverageTime() {
+    		if (totalNumber>0){
+    			return totalTime/totalNumber;
+    		} else {
+    			return 0;
+    		}
+    	}
+    	
+    	public Exception getLastException() {
+    		return lastException;
+    	}
+
+
+    	public String toString() {
+    		return ToStringBuilder.reflectionToString(this);
+    	}
+
+    	public long getRunningCall() {
+    		return runningCall;
+    	}
+
+    	public void startSpetialCall(HttpServletRequest request,String uri) {
+    		SessionManager.MANAGER.notifySpetialCall(request,uri);
+    	}
+
+		public void addInfo(String info) {
+			this.info=info;			
+		}	
+    }
+
+	/**
+	 * Add info to the servlet info. To avoid performace problems hadle width care.
+	 * 
+	 * @param info
+	 */
+	public void addServletInfo(String info){
+		servletInfo.addInfo(info);
+	}
+	
+	public static boolean isLocalAccess(HttpServletRequest request){
+		String remoteHost=getRemoteAddress(request);
+		if (StringUtils.equalsIgnoreCase(LOCAL_HOST, remoteHost)){
+			if (log.isInfoEnabled()){
+				log.info("The url:" + getURI(request) + " accept localhost access");
+			}
+			return true;
+		} else {
+			return false;
+		}
+	}
 }
